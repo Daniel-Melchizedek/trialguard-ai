@@ -1,20 +1,16 @@
 // Service worker — receives trial detections from content.js, saves to backend.
 
-const BACKEND_URL_KEY = "backendUrl";
-const DEFAULT_BACKEND = "http://localhost:7071";
+importScripts('config.js');
 
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.sync.get(["userEmail", BACKEND_URL_KEY], data => {
-      resolve({
-        userEmail: data.userEmail || null,
-        backendUrl: data[BACKEND_URL_KEY] || DEFAULT_BACKEND
-      });
+    chrome.storage.sync.get(["userEmail"], data => {
+      resolve({ userEmail: data.userEmail || null });
     });
   });
 }
 
-async function saveTrial(trialData, userEmail, backendUrl) {
+async function saveTrial(trialData, userEmail) {
   const payload = {
     userEmail,
     productName: trialData.productName,
@@ -24,9 +20,12 @@ async function saveTrial(trialData, userEmail, backendUrl) {
     pageTitle: trialData.pageTitle
   };
 
-  const resp = await fetch(`${backendUrl}/api/save-trial`, {
+  const resp = await fetch(`${CONFIG.BACKEND_URL}/api/save-trial`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-functions-key": CONFIG.FUNCTION_KEY
+    },
     body: JSON.stringify(payload)
   });
 
@@ -56,7 +55,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action !== "trialDetected") return;
 
   const handle = async () => {
-    const { userEmail, backendUrl } = await getSettings();
+    const { userEmail } = await getSettings();
 
     if (!userEmail) {
       chrome.action.setBadgeText({ text: "!" });
@@ -67,7 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     await storeLocalTrial(message.data, userEmail);
 
     try {
-      await saveTrial(message.data, userEmail, backendUrl);
+      await saveTrial(message.data, userEmail);
       chrome.action.setBadgeText({ text: "✓", tabId: sender.tab?.id });
       chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
     } catch (err) {
@@ -79,7 +78,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Clear badge when tab is closed or navigated
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading") {
     chrome.action.setBadgeText({ text: "", tabId });

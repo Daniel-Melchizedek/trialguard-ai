@@ -9,3 +9,6 @@ services:
 infra:
   provider: bicep
   path: infrastructure
+  parameters:
+    location: centralus
+    environmentName: prod

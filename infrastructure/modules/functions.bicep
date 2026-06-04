@@ -11,22 +11,24 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   kind: 'StorageV2'
 }
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
+// Linux Consumption plan — lower quota pressure than Windows Dynamic on VS subscriptions
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: '${appName}-plan'
   location: location
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
   }
+  kind: 'linux'
   properties: {
-    reserved: false
+    reserved: true
   }
 }
 
-resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
+resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: appName
   location: location
-  kind: 'functionapp'
+  kind: 'functionapp,linux'
   tags: {
     'azd-service-name': 'backend'
   }
@@ -39,27 +41,18 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
         { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~20' }
-        {
-          name: 'COSMOS_ENDPOINT'
-          value: cosmosEndpoint
-        }
+        { name: 'COSMOS_ENDPOINT', value: cosmosEndpoint }
         {
           name: 'COSMOS_KEY'
           value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/cosmos-key/)'
         }
-        {
-          name: 'COSMOS_DATABASE'
-          value: 'trialguard'
-        }
-        {
-          name: 'COSMOS_CONTAINER'
-          value: 'trials'
-        }
+        { name: 'COSMOS_DATABASE', value: 'trialguard' }
+        { name: 'COSMOS_CONTAINER', value: 'trials' }
         {
           name: 'ACS_CONNECTION_STRING'
           value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/acs-connection-string/)'
@@ -75,7 +68,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
       }
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
-      nodeVersion: '~20'
+      linuxFxVersion: 'Node|20'
     }
     httpsOnly: true
   }
