@@ -1,0 +1,90 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  width: 340px;
+  min-height: 200px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.logo { font-size: 22px; }
+
+h1 { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+.subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.banner-warn { background: #78350f22; color: #fbbf24; border-bottom: 1px solid #78350f55; }
+.banner a { color: #fbbf24; margin-left: auto; text-decoration: none; font-weight: 600; }
+
+.email-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  background: #1e293b;
+  font-size: 12px;
+  color: #94a3b8;
+  border-bottom: 1px solid #0f172a;
+}
+.email-row a { color: #60a5fa; text-decoration: none; font-size: 11px; }
+
+.section-title {
+  padding: 10px 14px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+}
+
+.trial-card {
+  margin: 4px 10px;
+  padding: 10px 12px;
+  background: #1e293b;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.trial-card.expiring-soon { border-left-color: #f59e0b; }
+.trial-card.expired { border-left-color: #ef4444; opacity: 0.6; }
+
+.trial-name { font-weight: 600; font-size: 13px; color: #f1f5f9; }
+.trial-meta { font-size: 11px; color: #64748b; margin-top: 3px; }
+.trial-date { font-size: 11px; margin-top: 4px; }
+.trial-date.ok { color: #34d399; }
+.trial-date.warn { color: #fbbf24; }
+.trial-date.danger { color: #f87171; }
+
+.empty-state {
+  text-align: center;
+  padding: 24px 20px;
+  color: #475569;
+}
+.empty-state .hint { font-size: 11px; margin-top: 6px; color: #334155; }
+
+.footer {
+  padding: 8px 14px;
+  font-size: 10px;
+  color: #334155;
+  border-top: 1px solid #1e293b;
+  text-align: center;
+}
+
+.hidden { display: none !important; }

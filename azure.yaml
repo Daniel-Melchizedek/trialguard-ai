@@ -1,0 +1,11 @@
+name: trialguard
+metadata:
+  template: trialguard@0.0.1
+services:
+  backend:
+    project: ./backend
+    language: js
+    host: function
+infra:
+  provider: bicep
+  path: infrastructure

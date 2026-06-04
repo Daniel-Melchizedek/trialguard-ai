@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrialGuard</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="header">
+    <span class="logo">🛡️</span>
+    <div>
+      <h1>TrialGuard</h1>
+      <p class="subtitle">AI-powered trial tracker</p>
+    </div>
+  </div>
+
+  <div id="no-email-banner" class="banner banner-warn hidden">
+    ⚠️ Set your email to receive reminders.
+    <a href="#" id="open-options">Settings →</a>
+  </div>
+
+  <div id="email-display" class="email-row hidden">
+    <span id="email-text"></span>
+    <a href="#" id="open-options-link">Edit</a>
+  </div>
+
+  <div class="section-title">Detected Trials</div>
+
+  <div id="trial-list"></div>
+
+  <div id="empty-state" class="empty-state hidden">
+    <p>No trials detected yet.</p>
+    <p class="hint">Browse to a free trial page and TrialGuard will detect it automatically.</p>
+  </div>
+
+  <div class="footer">
+    <span>Powered by Aion 1.0 · on-device AI</span>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

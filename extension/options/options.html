@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TrialGuard Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 32px;
+      max-width: 520px;
+    }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #94a3b8; }
+    input[type="email"], input[type="url"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #f1f5f9;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #3b82f6; }
+    .field { margin-bottom: 20px; }
+    .hint { font-size: 11px; color: #475569; margin-top: 5px; }
+    button {
+      padding: 10px 22px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2563eb; }
+    #status {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #34d399;
+      min-height: 20px;
+    }
+    hr { border: none; border-top: 1px solid #1e293b; margin: 28px 0; }
+    .danger-zone h2 { font-size: 14px; color: #f87171; margin-bottom: 8px; }
+    .btn-danger {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+    .btn-danger:hover { background: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>🛡️ TrialGuard Settings</h1>
+  <p class="subtitle">Configure your email and backend to receive trial reminders.</p>
+
+  <div class="field">
+    <label for="email">Reminder Email Address</label>
+    <input type="email" id="email" placeholder="you@example.com" />
+    <p class="hint">You'll receive reminder emails 3 days before each trial ends.</p>
+  </div>
+
+  <div class="field">
+    <label for="backendUrl">Backend URL</label>
+    <input type="url" id="backendUrl" placeholder="https://<your-app>.azurewebsites.net" />
+    <p class="hint">Azure Function App URL after running <code>azd up</code>. Leave as localhost for local testing.</p>
+  </div>
+
+  <button id="save">Save Settings</button>
+  <div id="status"></div>
+
+  <hr />
+
+  <div class="danger-zone">
+    <h2>Clear All Data</h2>
+    <button id="clear" class="btn-danger">Clear Detected Trials</button>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

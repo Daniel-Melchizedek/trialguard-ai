@@ -1,0 +1,10 @@
+node_modules/
+.env
+local.settings.json
+*.local.json
+dist/
+.azd/
+.azure/
+*.log
+.DS_Store
+Thumbs.db

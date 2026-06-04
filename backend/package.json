@@ -1,0 +1,22 @@
+{
+  "name": "trialguard-backend",
+  "version": "1.0.0",
+  "description": "TrialGuard Azure Functions backend",
+  "main": "src/functions/saveTrial.js",
+  "scripts": {
+    "start": "func start",
+    "build": "echo No build step required"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.0",
+    "@azure/cosmos": "^4.1.1",
+    "@azure/communication-email": "^1.0.0",
+    "@azure/identity": "^4.4.1"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.x"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

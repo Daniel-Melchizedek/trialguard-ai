@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "TrialGuard",
+  "version": "1.0.0",
+  "description": "AI-powered free trial tracker — never get charged by surprise. Uses Aion 1.0 on-device AI to detect trials as you browse.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "TrialGuard"
+  },
+  "options_page": "options/options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
