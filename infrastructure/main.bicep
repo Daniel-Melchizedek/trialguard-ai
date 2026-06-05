@@ -24,7 +24,6 @@ module cosmosdb 'modules/cosmosdb.bicep' = {
 module communication 'modules/communication.bicep' = {
   name: 'communication'
   params: {
-    location: location
     acsName: acsName
   }
 }

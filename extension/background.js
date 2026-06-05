@@ -52,30 +52,42 @@ async function storeLocalTrial(trialData, userEmail) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("[TrialGuard BG] message received:", message.action);
   if (message.action !== "trialDetected") return;
 
   const handle = async () => {
-    const { userEmail } = await getSettings();
-
-    if (!userEmail) {
-      chrome.action.setBadgeText({ text: "!" });
-      chrome.action.setBadgeBackgroundColor({ color: "#f59e0b" });
-      return;
-    }
-
-    await storeLocalTrial(message.data, userEmail);
-
     try {
-      await saveTrial(message.data, userEmail);
-      chrome.action.setBadgeText({ text: "✓", tabId: sender.tab?.id });
-      chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
+      const { userEmail } = await getSettings();
+
+      // Storage already written by bridge.js — just handle badge + backend save
+      if (sender.tab?.id) {
+        chrome.action.setBadgeText({ text: "✓", tabId: sender.tab.id });
+        chrome.action.setBadgeBackgroundColor({ color: "#10b981", tabId: sender.tab.id });
+      }
+
+      if (!userEmail) {
+        chrome.action.setBadgeText({ text: "!" });
+        chrome.action.setBadgeBackgroundColor({ color: "#f59e0b" });
+        sendResponse({ saved: true, backend: false });
+        return;
+      }
+
+      try {
+        await saveTrial(message.data, userEmail);
+        console.log("[TrialGuard BG] Saved to Azure backend");
+        sendResponse({ saved: true, backend: true });
+      } catch (err) {
+        console.error("[TrialGuard BG] Backend save failed:", err.message);
+        sendResponse({ saved: true, backend: false, error: err.message });
+      }
     } catch (err) {
-      console.error("[TrialGuard] Failed to save to backend:", err);
+      console.error("[TrialGuard BG] Handler error:", err.message);
+      sendResponse({ saved: false, error: err.message });
     }
   };
 
   handle();
-  return true;
+  return true; // keep message channel open for async sendResponse
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
