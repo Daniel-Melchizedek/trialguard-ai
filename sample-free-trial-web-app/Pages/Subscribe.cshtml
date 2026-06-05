@@ -1,0 +1,83 @@
+@page
+@model SubscribeModel
+@{
+    ViewData["Title"] = "Start Free Trial";
+}
+
+<div class="subscribe-hero">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="subscribe-card">
+                    <div class="subscribe-card-header text-center">
+                        <div class="trial-badge mb-3">
+                            <i class="bi bi-lightning-charge-fill"></i> 2-Day Free Trial
+                        </div>
+                        <h1 class="subscribe-title">Start Your Free Trial</h1>
+                        <p class="subscribe-subtitle">Get full access to NeuroRevive for 2 days — no credit card required.</p>
+                    </div>
+
+                    <div class="subscribe-card-body">
+                        <form method="post" novalidate>
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <div class="form-floating">
+                                        <input asp-for="Input.FirstName" class="form-control" id="firstName" placeholder="First Name" />
+                                        <label asp-for="Input.FirstName" for="firstName">First Name</label>
+                                        <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-floating">
+                                        <input asp-for="Input.LastName" class="form-control" id="lastName" placeholder="Last Name" />
+                                        <label asp-for="Input.LastName" for="lastName">Last Name</label>
+                                        <span asp-validation-for="Input.LastName" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <input asp-for="Input.Email" class="form-control" id="email" placeholder="Email Address" />
+                                        <label asp-for="Input.Email" for="email">Email Address</label>
+                                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-brand-primary w-100 mt-4">
+                                <i class="bi bi-rocket-takeoff-fill me-2"></i>Activate My Free Trial
+                            </button>
+
+                            <p class="subscribe-disclaimer mt-3">
+                                <i class="bi bi-shield-check me-1"></i>
+                                No credit card needed. Trial ends 2 days after activation. By subscribing you agree to our <a asp-page="/Privacy">Privacy Policy</a>.
+                            </p>
+                        </form>
+                    </div>
+
+                    <div class="subscribe-card-footer">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                <span>Full Access</span>
+                            </div>
+                            <div class="col-4">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                <span>No CC Required</span>
+                            </div>
+                            <div class="col-4">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                <span>Cancel Anytime</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

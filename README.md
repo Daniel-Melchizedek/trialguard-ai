@@ -108,6 +108,64 @@ hackerearthbuildai/
 
 ---
 
+## Sample Free Trial Web App
+
+The [`sample-free-trial-web-app/`](sample-free-trial-web-app/) directory contains a standalone ASP.NET Core web application designed to **test TrialGuard end-to-end without relying on real-world products** (e.g. Adobe, Microsoft 365 trials).
+
+### What It Is
+
+**NeuroRevive** — a fictional clinical brain research SaaS platform that simulates a realistic free trial sign-up flow. It gives TrialGuard a safe, controlled target page to detect, parse, and track.
+
+### Why It Exists
+
+Testing TrialGuard against real products is impractical — trials have limited slots, require credit cards, and can't be reset. This app provides a repeatable, local environment with known trial metadata so you can verify the full detection → reminder pipeline.
+
+### Features
+
+- 2-day free trial sign-up (no credit card required)
+- Form collects First Name, Last Name, Email with server-side validation
+- Duplicate email detection
+- Trial expiry auto-calculated from sign-up time (UTC)
+- Confirmation page with exact trial end date — the data TrialGuard should extract
+- JSON file-based subscription persistence (`Data/subscriptions.json`)
+- Docker support (port 8080)
+
+### Pages
+
+| Route | Purpose |
+|---|---|
+| `/` | Landing page with hero, feature cards, and CTA |
+| `/Subscribe` | Free trial sign-up form |
+| `/ThankYou` | Confirmation with user name and trial expiry date |
+| `/Privacy` | Privacy policy |
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | ASP.NET Core Razor Pages (.NET 10) |
+| Frontend | Bootstrap 5, jQuery, Bootstrap Icons |
+| Storage | JSON file (`~/Data/subscriptions.json`) |
+| Container | Docker (ASP.NET 10 base image) |
+
+### Running Locally
+
+```bash
+cd sample-free-trial-web-app
+dotnet run
+```
+
+Then open `https://localhost:5001` (or the port shown in the terminal), navigate to `/Subscribe`, and complete the sign-up. The ThankYou page will display the trial expiry date — load the extension and confirm TrialGuard detects it correctly.
+
+Or with Docker:
+
+```bash
+docker build -t neurorevive .
+docker run -p 8080:8080 neurorevive
+```
+
+---
+
 ## Submission
 
 - **Theme:** Agentic Web

@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "ae232f83-dce8-4e51-9063-e5012efe51a7",
+    "FirstName": "Alice",
+    "LastName": "Johnson",
+    "Email": "alice.johnson@example.com",
+    "SubscribedAtUtc": "2026-06-04T17:38:51.1350435Z",
+    "TrialEndsAtUtc": "2026-06-06T17:38:51.1351941Z"
+  }
+]

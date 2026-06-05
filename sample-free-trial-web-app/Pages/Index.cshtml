@@ -1,0 +1,152 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "NeuroRevive — Brain Research for Coma Patients";
+}
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-badge mb-3">
+                    <i class="bi bi-activity me-1"></i> Clinical Brain Research Platform
+                </div>
+                <h1 class="hero-title">Advancing brain research to bring coma patients home.</h1>
+                <p class="hero-subtitle">NeuroRevive gives neurologists, researchers, and clinicians the tools to analyse brain activity, monitor patient recovery, and collaborate globally — all in one platform.</p>
+                <div class="hero-cta d-flex flex-wrap gap-3 mt-4">
+                    <a asp-page="/Subscribe" class="btn btn-hero-primary">
+                        <i class="bi bi-rocket-takeoff-fill me-2"></i>Start Free Trial
+                    </a>
+                    <a href="#features" class="btn btn-hero-outline">
+                        <i class="bi bi-play-circle me-2"></i>See How It Works
+                    </a>
+                </div>
+                <p class="hero-disclaimer mt-3">
+                    <i class="bi bi-shield-check me-1"></i>2-day free trial &nbsp;•&nbsp; No credit card required &nbsp;•&nbsp; Cancel anytime
+                </p>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="hero-visual">
+                    <div class="hero-visual-card">
+                        <div class="visual-row">
+                            <span class="visual-dot green"></span>
+                            <span class="visual-label">Neural Monitoring Active</span>
+                            <span class="visual-badge">Live</span>
+                        </div>
+                        <div class="visual-flow mt-3">
+                            <div class="flow-node"><i class="bi bi-broadcast"></i><span>EEG Signal</span></div>
+                            <div class="flow-arrow"><i class="bi bi-arrow-right"></i></div>
+                            <div class="flow-node active"><i class="bi bi-cpu"></i><span>AI Analysis</span></div>
+                            <div class="flow-arrow"><i class="bi bi-arrow-right"></i></div>
+                            <div class="flow-node"><i class="bi bi-bar-chart-line"></i><span>Report</span></div>
+                        </div>
+                        <div class="visual-stat mt-3">
+                            <div class="stat-item"><span class="stat-num">1,240</span><span class="stat-label">Scans analysed today</span></div>
+                            <div class="stat-item"><span class="stat-num">98.4%</span><span class="stat-label">Signal accuracy</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Strip -->
+<div class="stats-strip">
+    <div class="container">
+        <div class="row text-center g-0">
+            <div class="col-6 col-md-3">
+                <div class="stat-strip-item">
+                    <div class="stat-strip-num">500+</div>
+                    <div class="stat-strip-label">Research centres worldwide</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-strip-item">
+                    <div class="stat-strip-num">98.4%</div>
+                    <div class="stat-strip-label">Diagnostic accuracy</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-strip-item">
+                    <div class="stat-strip-num">50+</div>
+                    <div class="stat-strip-label">Countries supported</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-strip-item">
+                    <div class="stat-strip-num">2 min</div>
+                    <div class="stat-strip-label">Average setup time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div id="features" class="features-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Purpose-built for coma research</h2>
+            <p class="section-subtitle">NeuroRevive brings together clinical data, AI diagnostics, and global collaboration tools in one secure platform.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon-wrap purple">
+                        <i class="bi bi-broadcast"></i>
+                    </div>
+                    <h3 class="feature-title">Neural Signal Analysis</h3>
+                    <p class="feature-desc">Process EEG and fMRI data in real time to detect and classify levels of consciousness in unresponsive patients.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon-wrap blue">
+                        <i class="bi bi-heart-pulse-fill"></i>
+                    </div>
+                    <h3 class="feature-title">Patient Progress Monitoring</h3>
+                    <p class="feature-desc">Track recovery milestones over time with longitudinal brain activity charts, clinical notes, and automated alerts.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon-wrap teal">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h3 class="feature-title">Global Research Network</h3>
+                    <p class="feature-desc">Collaborate securely with neurologists, neurosurgeons, and researchers across 50+ countries on shared patient datasets.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card">
+                    <div class="feature-icon-wrap orange">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h3 class="feature-title">AI Recovery Prediction</h3>
+                    <p class="feature-desc">Machine learning models trained on thousands of cases surface outcome probabilities to guide treatment decisions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom CTA Section -->
+<div class="cta-section">
+    <div class="container">
+        <div class="cta-card text-center">
+            <div class="cta-icon mb-3">
+                <i class="bi bi-activity"></i>
+            </div>
+            <h2 class="cta-title">Start contributing to life-changing research</h2>
+            <p class="cta-subtitle">Join 500+ research centres already using NeuroRevive. Get started with a 2-day free trial — no credit card required.</p>
+            <a asp-page="/Subscribe" class="btn btn-cta-primary mt-3">
+                <i class="bi bi-rocket-takeoff-fill me-2"></i>Claim Your Free Trial
+            </a>
+            <p class="cta-disclaimer mt-3">
+                <i class="bi bi-lock-fill me-1"></i> Patient data is always encrypted and HIPAA-compliant.
+            </p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,85 @@
+@page
+@model ThankYouModel
+@{
+    ViewData["Title"] = "You're All Set!";
+    var humanDate = Model.TrialEndsAtUtc.ToString("dddd, MMMM d yyyy");
+    var utcDate = Model.TrialEndsAtUtc.ToString("yyyy-MM-dd HH:mm") + " UTC";
+}
+
+<div class="thankyou-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8 text-center">
+                <div class="thankyou-card">
+                    <div class="alert alert-success-custom d-flex align-items-center gap-2 mb-0" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
+                        <span><strong>Trial activated successfully!</strong> Your 2-day free trial of NeuroRevive is now live and expires on <strong>@humanDate</strong>.</span>
+                    </div>
+
+                    <div class="thankyou-card-body">
+                    <div class="success-icon-wrap">
+                        <div class="success-icon">
+                            <i class="bi bi-check-lg"></i>
+                        </div>
+                    </div>
+
+                    <h1 class="thankyou-title mt-4">
+                        @if (!string.IsNullOrEmpty(Model.FirstName))
+                        {
+                            <span>Welcome aboard, @Model.FirstName!</span>
+                        }
+                        else
+                        {
+                            <span>You're all set!</span>
+                        }
+                    </h1>
+
+                    <p class="thankyou-subtitle">Your free trial of <strong>NeuroRevive</strong> has been activated. Start exploring brain research tools today.</p>
+
+                    <div class="trial-info-box">
+                        <div class="trial-info-label">
+                            <i class="bi bi-calendar-check me-2"></i>Trial expires on
+                        </div>
+                        <div class="trial-date-primary">@humanDate</div>
+                        <div class="trial-date-utc">@utcDate</div>
+                    </div>
+
+                    <div class="row g-3 mt-4 text-start">
+                        <div class="col-12">
+                            <div class="next-step-item">
+                                <span class="step-num">1</span>
+                                <div>
+                                    <strong>Check your inbox</strong>
+                                    <p class="mb-0 text-muted small">A confirmation email is on its way with your trial details.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="next-step-item">
+                                <span class="step-num">2</span>
+                                <div>
+                                    <strong>Explore the research dashboard</strong>
+                                    <p class="mb-0 text-muted small">Upload your first EEG dataset and run a neural signal analysis in minutes.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="next-step-item">
+                                <span class="step-num">3</span>
+                                <div>
+                                    <strong>Invite your team</strong>
+                                    <p class="mb-0 text-muted small">NeuroRevive is more powerful when your full research team is connected.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a asp-page="/Index" class="btn btn-brand-primary w-100 mt-4">
+                        <i class="bi bi-house-fill me-2"></i>Back to Home
+                    </a>
+                    </div><!-- /.thankyou-card-body -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
