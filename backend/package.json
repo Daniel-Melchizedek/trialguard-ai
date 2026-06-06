@@ -2,7 +2,7 @@
   "name": "trialguard-backend",
   "version": "1.0.0",
   "description": "TrialGuard Azure Functions backend",
-  "main": "src/functions/saveTrial.js",
+  "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
     "build": "echo No build step required"
@@ -17,6 +17,6 @@
     "azure-functions-core-tools": "^4.x"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

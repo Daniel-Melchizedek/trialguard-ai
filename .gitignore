@@ -489,3 +489,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Icon generator dependencies
+extension/icons/node_modules/
+extension/icons/package-lock.json

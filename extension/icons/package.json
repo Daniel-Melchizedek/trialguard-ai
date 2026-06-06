@@ -1,0 +1,14 @@
+{
+  "name": "trialguard-icon-generator",
+  "version": "1.0.0",
+  "description": "One-time script to generate TrialGuard PNG icons from SVG",
+  "scripts": {
+    "generate": "node generate-icons.js"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -45,7 +45,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
-        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~20' }
+        { name: 'WEBSITE_NODE_DEFAULT_VERSION', value: '~22' }
         { name: 'COSMOS_ENDPOINT', value: cosmosEndpoint }
         {
           name: 'COSMOS_KEY'
@@ -68,7 +68,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
       }
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
-      linuxFxVersion: 'Node|20'
+      linuxFxVersion: 'Node|22'
     }
     httpsOnly: true
   }
