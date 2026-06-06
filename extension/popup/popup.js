@@ -56,10 +56,13 @@ async function checkAionStatus() {
     return;
   }
 
-  const availability = await LanguageModel.availability({ expectedOutputLanguages: ["en"] });
-  console.log("[TrialGuard] popup: model availability =", availability);
+  // LanguageModel.availability() triggers an uncatchable Edge browser error regardless
+  // of options passed. Use create() with expectedOutputLanguages instead — it does not
+  // trigger that error and covers all states: resolves instantly if model is ready,
+  // fires downloadprogress events if a download is needed, rejects if unavailable.
+  const stored = await chrome.storage.local.get(["aionReady", "aionError"]);
 
-  if (availability === "available") {
+  if (stored.aionReady) {
     statusEl.className = "ai-status ready";
     statusEl.textContent = "✓ Aion 1.0 ready — on-device AI active";
     statusEl.classList.remove("hidden");
@@ -67,65 +70,39 @@ async function checkAionStatus() {
     return;
   }
 
-  if (availability === "unavailable") {
-    statusEl.className = "ai-status error";
-    statusEl.textContent = "⚠️ Aion 1.0 model unavailable on this device.";
-    statusEl.classList.remove("hidden");
-    return;
-  }
-
-  // Check if a download is already in progress (progress saved by a previous popup session)
-  const stored = await chrome.storage.local.get(["aionProgress", "aionError"]);
-  if (stored.aionError) {
-    statusEl.className = "ai-status error";
-    statusEl.textContent = `⚠️ Previous download failed: ${stored.aionError}`;
-    statusEl.classList.remove("hidden");
-    chrome.storage.local.remove("aionError");
-  } else if (stored.aionProgress) {
-    const p = stored.aionProgress;
-    const age = Math.round((Date.now() - p.ts) / 1000);
-    const pctTxt = p.pct != null ? `${p.pct}%` : `${(p.loaded/1024/1024).toFixed(0)} MB`;
-    statusEl.className = "ai-status downloading";
-    statusEl.innerHTML = `<span class="spinner"></span> Downloading… last seen ${pctTxt} (${age}s ago). Keep popup open.`;
-    statusEl.classList.remove("hidden");
-  }
-
-  // "downloadable" or "downloading"
   statusEl.className = "ai-status downloading";
-  statusEl.innerHTML = `<span class="spinner"></span> Aion 1.0 model not downloaded yet.`;
+  statusEl.innerHTML = `<span class="spinner"></span> Checking Aion 1.0 status…`;
   statusEl.classList.remove("hidden");
 
-  const btn = document.createElement("button");
-  btn.className = "ai-init-btn";
-  btn.textContent = "⬇️ Download Aion 1.0 Model";
-  statusEl.after(btn);
+  let downloadStarted = false;
 
-  btn.addEventListener("click", async () => {
-    btn.disabled = true;
-    btn.textContent = "⏳ Downloading… reopen popup to check status";
-    statusEl.innerHTML = `<span class="spinner"></span> Download started — reopen this popup to check progress.`;
-
-    // Fire LanguageModel.create() — Edge may continue downloading even if popup closes
-    LanguageModel.create({
-      expectedOutputLanguages: ["en"],
-      monitor(m) {
-        m.addEventListener("downloadprogress", e => {
-          chrome.storage.local.set({
-            aionProgress: {
-              loaded: e.loaded,
-              total: e.total,
-              pct: e.total > 0 ? Math.round((e.loaded / e.total) * 100) : null,
-              ts: Date.now()
-            }
-          });
+  LanguageModel.create({
+    expectedOutputLanguages: ["en"],
+    monitor(m) {
+      m.addEventListener("downloadprogress", e => {
+        downloadStarted = true;
+        const pct = e.total > 0 ? Math.round((e.loaded / e.total) * 100) : null;
+        const pctTxt = pct != null ? `${pct}%` : `${(e.loaded / 1024 / 1024).toFixed(0)} MB`;
+        statusEl.innerHTML = `<span class="spinner"></span> Downloading Aion 1.0… ${pctTxt}`;
+        chrome.storage.local.set({
+          aionProgress: {
+            loaded: e.loaded, total: e.total, pct, ts: Date.now()
+          }
         });
-      }
-    }).then(session => {
-      session.destroy();
-      chrome.storage.local.set({ aionReady: true, aionProgress: null });
-    }).catch(err => {
-      chrome.storage.local.set({ aionError: err.message });
-    });
+      });
+    }
+  }).then(session => {
+    session.destroy();
+    chrome.storage.local.set({ aionReady: true, aionProgress: null });
+    statusEl.className = "ai-status ready";
+    statusEl.textContent = "✓ Aion 1.0 ready — on-device AI active";
+    statusEl.classList.remove("hidden");
+    setTimeout(() => statusEl.classList.add("hidden"), 3000);
+  }).catch(err => {
+    console.warn("[TrialGuard] LanguageModel.create() probe failed:", err.message);
+    statusEl.className = "ai-status error";
+    statusEl.textContent = "⚠️ Aion 1.0 unavailable on this device.";
+    statusEl.classList.remove("hidden");
   });
 }
 

@@ -4,7 +4,7 @@ const { randomUUID } = require("crypto");
 
 app.http("saveTrial", {
   methods: ["POST", "OPTIONS"],
-  authLevel: "function",
+  authLevel: "anonymous",
   route: "save-trial",
   handler: async (request, context) => {
     // CORS preflight

@@ -23,7 +23,12 @@ async function runDiagnostics() {
   out.push(`LanguageModel keys: ${Object.getOwnPropertyNames(LanguageModel).join(", ")}`);
 
   // 3. Availability
-  const av = await LanguageModel.availability();
+  let av;
+  try {
+    av = await LanguageModel.availability();
+  } catch(e) {
+    av = "unknown";
+  }
   out.push(`availability(): ${av}`);
 
   // 4. Params / capabilities
@@ -35,7 +40,7 @@ async function runDiagnostics() {
   // 5. If available, ask the model its identity
   if (av === "available") {
     try {
-      const session = await LanguageModel.create({ expectedOutputLanguages: ["en"] });
+      const session = await LanguageModel.create();
       const identity = await session.prompt("What is your name and version? Reply in one sentence.");
       out.push(`Model self-report: "${identity.trim()}"`);
       session.destroy();
@@ -58,7 +63,12 @@ async function init() {
   console.log("[TrialGuard] === DIAGNOSTICS ===");
   diag.forEach(l => console.log("[TrialGuard]", l));
 
-  const av = await LanguageModel.availability();
+  let av;
+  try {
+    av = await LanguageModel.availability();
+  } catch(e) {
+    av = "unknown";
+  }
 
   if (av === "available") { showReady(diag); return; }
   if (av === "unavailable") {
@@ -79,7 +89,8 @@ btnEl.addEventListener("click", async () => {
   statusEl.innerHTML = `<div class="spinner"></div> <span id="st">Calling LanguageModel.create()…</span>`;
 
   pollInterval = setInterval(async () => {
-    const av = await LanguageModel.availability();
+    let av;
+    try { av = await LanguageModel.availability(); } catch(e) { av = "unknown"; }
     const st = document.getElementById("st");
     if (st) st.textContent = `Status: ${av} — waiting…`;
     console.log("[TrialGuard] polled availability:", av);
@@ -88,7 +99,6 @@ btnEl.addEventListener("click", async () => {
 
   try {
     const session = await LanguageModel.create({
-      expectedOutputLanguages: ["en"],
       monitor(m) {
         m.addEventListener("downloadprogress", e => {
           clearInterval(pollInterval);

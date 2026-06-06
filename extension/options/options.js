@@ -6,7 +6,7 @@ const statusEl = document.getElementById("status");
 
 chrome.storage.sync.get(["userEmail", "backendUrl"], data => {
   emailInput.value = data.userEmail || "";
-  backendInput.value = data.backendUrl || "http://localhost:7071";
+  backendInput.value = data.backendUrl || CONFIG.BACKEND_URL;
 });
 
 saveBtn.addEventListener("click", () => {

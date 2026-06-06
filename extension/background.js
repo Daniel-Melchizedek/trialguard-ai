@@ -4,13 +4,16 @@ importScripts('config.js');
 
 async function getSettings() {
   return new Promise(resolve => {
-    chrome.storage.sync.get(["userEmail"], data => {
-      resolve({ userEmail: data.userEmail || null });
+    chrome.storage.sync.get(["userEmail", "backendUrl"], data => {
+      resolve({
+        userEmail: data.userEmail || null,
+        backendUrl: data.backendUrl || CONFIG.BACKEND_URL
+      });
     });
   });
 }
 
-async function saveTrial(trialData, userEmail) {
+async function saveTrial(trialData, userEmail, backendUrl) {
   const payload = {
     userEmail,
     productName: trialData.productName,
@@ -20,11 +23,10 @@ async function saveTrial(trialData, userEmail) {
     pageTitle: trialData.pageTitle
   };
 
-  const resp = await fetch(`${CONFIG.BACKEND_URL}/api/save-trial`, {
+  const resp = await fetch(`${backendUrl}/api/save-trial`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "x-functions-key": CONFIG.FUNCTION_KEY
+      "Content-Type": "application/json"
     },
     body: JSON.stringify(payload)
   });
@@ -57,7 +59,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const handle = async () => {
     try {
-      const { userEmail } = await getSettings();
+      const { userEmail, backendUrl } = await getSettings();
 
       // Storage already written by bridge.js — just handle badge + backend save
       if (sender.tab?.id) {
@@ -73,7 +75,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       try {
-        await saveTrial(message.data, userEmail);
+        await saveTrial(message.data, userEmail, backendUrl);
         console.log("[TrialGuard BG] Saved to Azure backend");
         sendResponse({ saved: true, backend: true });
       } catch (err) {

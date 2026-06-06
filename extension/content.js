@@ -71,7 +71,7 @@ async function detectTrialWithAion(pageText, signals) {
     return null;
   }
 
-  const availability = await LanguageModel.availability({ expectedOutputLanguages: ["en"] });
+  const availability = await LanguageModel.availability();
   console.log("[TrialGuard] Aion 1.0 model availability:", availability);
 
   if (availability === "unavailable") {
@@ -85,7 +85,7 @@ async function detectTrialWithAion(pageText, signals) {
 
   console.log("[TrialGuard] Aion 1.0 Instruct: creating session...");
   const today = new Date().toISOString().slice(0, 10);
-  const session = await LanguageModel.create({ temperature: 0.2, topK: 10, expectedOutputLanguages: ["en"] });
+  const session = await LanguageModel.create({ temperature: 0.2, topK: 10 });
 
   // Strict prompt: requires BOTH a success message AND a clear trial duration/end date
   const prompt = `You are a strict free trial enrollment detector. Today is ${today}.
