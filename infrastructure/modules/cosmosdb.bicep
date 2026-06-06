@@ -50,6 +50,8 @@ resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/container
           { path: '/reminderDueDate/?' }
           { path: '/reminderSent/?' }
           { path: '/userEmail/?' }
+          { path: '/trialEndDate/?' }
+          { path: '/lastReminderSentAt/?' }
         ]
         excludedPaths: [
           { path: '/*' }

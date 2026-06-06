@@ -8,6 +8,7 @@
 
 # Azure Functions and local deployment artifacts
 local.settings.json
+backend-deploy.zip
 *.local.json
 dist/
 .azd/

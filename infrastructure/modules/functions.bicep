@@ -3,6 +3,7 @@ param appName string
 param storageAccountName string
 param cosmosEndpoint string
 param keyVaultUri string
+param openAiEndpoint string
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageAccountName
@@ -61,6 +62,12 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'EMAIL_SENDER'
           value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/email-sender/)'
         }
+        { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
+        {
+          name: 'AZURE_OPENAI_KEY'
+          value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/azure-openai-key/)'
+        }
+        { name: 'AZURE_OPENAI_DEPLOYMENT', value: 'gpt-4o-mini' }
       ]
       cors: {
         allowedOrigins: ['*']

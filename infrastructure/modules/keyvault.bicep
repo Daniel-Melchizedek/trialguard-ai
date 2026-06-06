@@ -7,6 +7,9 @@ param cosmosKey string
 @secure()
 param acsConnectionString string
 param emailSender string
+@secure()
+param openAiKey string
+param openAiEndpoint string
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
@@ -53,6 +56,18 @@ resource secretEmailSender 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'email-sender'
   properties: { value: emailSender }
+}
+
+resource secretOpenAiKey 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'azure-openai-key'
+  properties: { value: openAiKey }
+}
+
+resource secretOpenAiEndpoint 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'azure-openai-endpoint'
+  properties: { value: openAiEndpoint }
 }
 
 output keyVaultUri string = keyVault.properties.vaultUri

@@ -30,8 +30,11 @@ async function getTrialsDueForReminder() {
   const { resources } = await container.items
     .query({
       query: `SELECT * FROM c
-              WHERE c.reminderDueDate <= @today
-              AND c.reminderSent = false`,
+              WHERE c.trialEndDate >= @today
+              AND (
+                NOT IS_DEFINED(c.lastReminderSentAt)
+                OR c.lastReminderSentAt < @today
+              )`,
       parameters: [{ name: "@today", value: today }]
     })
     .fetchAll();
@@ -39,6 +42,7 @@ async function getTrialsDueForReminder() {
   return resources;
 }
 
+// Legacy — kept for backward compatibility
 async function markReminderSent(id, userEmail) {
   const container = getContainer();
   await container.item(id, userEmail).patch([
@@ -47,4 +51,14 @@ async function markReminderSent(id, userEmail) {
   ]);
 }
 
-module.exports = { upsertTrial, getTrialsDueForReminder, markReminderSent };
+async function markDailyReminderSent(id, userEmail) {
+  const container = getContainer();
+  const today = new Date().toISOString().slice(0, 10);
+  await container.item(id, userEmail).patch([
+    { op: "set", path: "/lastReminderSentAt", value: today },
+    { op: "set", path: "/reminderSent", value: true },
+    { op: "set", path: "/reminderSentAt", value: new Date().toISOString() }
+  ]);
+}
+
+module.exports = { upsertTrial, getTrialsDueForReminder, markReminderSent, markDailyReminderSent };

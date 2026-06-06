@@ -1,5 +1,7 @@
 const { app } = require("@azure/functions");
-const { upsertTrial } = require("../utils/cosmosClient");
+const { upsertTrial, markDailyReminderSent } = require("../utils/cosmosClient");
+const { sendReminderEmail } = require("../utils/emailClient");
+const { generateTrialTip } = require("../utils/aiClient");
 const { randomUUID } = require("crypto");
 
 app.http("saveTrial", {
@@ -55,17 +57,30 @@ app.http("saveTrial", {
       reminderDueDate,
       reminderSent: false,
       reminderSentAt: null,
+      lastReminderSentAt: null,
       detectedAt: new Date().toISOString()
     };
 
+    let saved;
     try {
-      const saved = await upsertTrial(trial);
+      saved = await upsertTrial(trial);
       context.log(`[TrialGuard] Saved trial: ${productName} for ${userEmail}`);
-      return jsonResponse(201, { success: true, id: saved.id });
     } catch (err) {
       context.log.error("[TrialGuard] Cosmos DB error:", err.message);
       return jsonResponse(500, { error: "Failed to save trial" });
     }
+
+    // Send Day 1 email immediately — don't wait for the 9 AM timer
+    try {
+      const tip = await generateTrialTip(saved).catch(() => null);
+      await sendReminderEmail(saved, tip);
+      await markDailyReminderSent(saved.id, saved.userEmail);
+      context.log(`[TrialGuard] Day 1 email sent for ${productName} to ${userEmail}`);
+    } catch (err) {
+      context.log.warn(`[TrialGuard] Day 1 email failed (trial still saved): ${err.message}`);
+    }
+
+    return jsonResponse(201, { success: true, id: saved.id });
   }
 });
 

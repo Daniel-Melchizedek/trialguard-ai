@@ -10,6 +10,7 @@ var acsName = '${prefix}-acs-${uniqueString(resourceGroup().id)}'
 var keyVaultName = '${prefix}-kv-${uniqueString(resourceGroup().id)}'
 var functionAppName = '${prefix}-func-${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'tgst${uniqueString(resourceGroup().id)}'
+var openAiAccountName = '${prefix}-oai-${uniqueString(resourceGroup().id)}'
 
 // Cosmos DB — serverless, lowest cost
 module cosmosdb 'modules/cosmosdb.bicep' = {
@@ -28,6 +29,15 @@ module communication 'modules/communication.bicep' = {
   }
 }
 
+// Azure OpenAI — gpt-4o-mini for daily AI-generated trial tips
+module openai 'modules/openai.bicep' = {
+  name: 'openai'
+  params: {
+    location: location
+    openAiAccountName: openAiAccountName
+  }
+}
+
 // Azure Functions — Linux Consumption plan (pay-per-execution)
 module functions 'modules/functions.bicep' = {
   name: 'functions'
@@ -37,10 +47,11 @@ module functions 'modules/functions.bicep' = {
     storageAccountName: storageAccountName
     cosmosEndpoint: cosmosdb.outputs.endpoint
     keyVaultUri: 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
+    openAiEndpoint: openai.outputs.endpoint
   }
 }
 
-// Key Vault — reads Cosmos key from module output (avoids cross-deployment listKeys issue)
+// Key Vault — reads secrets from module outputs
 module keyvault 'modules/keyvault.bicep' = {
   name: 'keyvault'
   params: {
@@ -50,9 +61,12 @@ module keyvault 'modules/keyvault.bicep' = {
     cosmosKey: cosmosdb.outputs.primaryKey
     acsConnectionString: communication.outputs.acsConnectionString
     emailSender: communication.outputs.senderAddress
+    openAiKey: openai.outputs.primaryKey
+    openAiEndpoint: openai.outputs.endpoint
   }
 }
 
 output functionAppUrl string = functions.outputs.functionAppUrl
 output functionAppName string = functions.outputs.functionAppName
 output cosmosEndpoint string = cosmosdb.outputs.endpoint
+output openAiEndpoint string = openai.outputs.endpoint
