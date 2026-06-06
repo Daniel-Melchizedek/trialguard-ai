@@ -56,7 +56,7 @@ async function checkAionStatus() {
     return;
   }
 
-  const availability = await LanguageModel.availability();
+  const availability = await LanguageModel.availability({ expectedOutputLanguages: ["en"] });
   console.log("[TrialGuard] popup: model availability =", availability);
 
   if (availability === "available") {

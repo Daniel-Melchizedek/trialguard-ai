@@ -71,7 +71,7 @@ async function detectTrialWithAion(pageText, signals) {
     return null;
   }
 
-  const availability = await LanguageModel.availability();
+  const availability = await LanguageModel.availability({ expectedOutputLanguages: ["en"] });
   console.log("[TrialGuard] Aion 1.0 model availability:", availability);
 
   if (availability === "unavailable") {
