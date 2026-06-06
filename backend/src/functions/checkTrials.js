@@ -13,7 +13,7 @@ app.timer("checkTrials", {
     try {
       trials = await getTrialsDueForReminder();
     } catch (err) {
-      context.log.error("[TrialGuard] Failed to query Cosmos DB:", err.message);
+      context.error("[TrialGuard] Failed to query Cosmos DB:", err.message);
       return;
     }
 
@@ -25,7 +25,7 @@ app.timer("checkTrials", {
         tip = await generateTrialTip(trial);
         context.log(`[TrialGuard] Generated tip for ${trial.productName}`);
       } catch (err) {
-        context.log.warn(
+        context.warn(
           `[TrialGuard] Tip generation failed for ${trial.productName}, sending without tip:`,
           err.message
         );
@@ -36,7 +36,7 @@ app.timer("checkTrials", {
         await markDailyReminderSent(trial.id, trial.userEmail);
         context.log(`[TrialGuard] Daily reminder sent to ${trial.userEmail} for ${trial.productName}`);
       } catch (err) {
-        context.log.error(
+        context.error(
           `[TrialGuard] Failed to send daily reminder for ${trial.id}:`,
           err.message
         );

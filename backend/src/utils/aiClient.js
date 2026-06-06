@@ -49,6 +49,7 @@ async function generateTrialTip(trial) {
     `Do not mention cancellation, billing, or pricing.`;
 
   const response = await getClient().chat.completions.create({
+    model: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini",
     messages: [
       { role: "system", content: systemMsg },
       { role: "user", content: userMsg }
