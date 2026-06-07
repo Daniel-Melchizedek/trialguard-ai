@@ -5,6 +5,7 @@ param cosmosEndpoint string
 param keyVaultUri string
 param openAiEndpoint string
 param aiProjectEndpoint string = ''
+param appInsightsConnectionString string = ''
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageAccountName
@@ -70,6 +71,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
         { name: 'AZURE_OPENAI_DEPLOYMENT', value: 'gpt-4o-mini' }
         { name: 'AZURE_AI_PROJECT_ENDPOINT', value: aiProjectEndpoint }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
       ]
       cors: {
         allowedOrigins: ['*']

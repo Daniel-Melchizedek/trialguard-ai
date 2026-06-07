@@ -13,10 +13,22 @@ var storageAccountName = 'tgst${uniqueString(resourceGroup().id)}'
 var openAiAccountName = '${prefix}-oai-${uniqueString(resourceGroup().id)}'
 var aiFoundryAccountName = '${prefix}-aif-${uniqueString(resourceGroup().id)}'
 var aiFoundryProjectName = 'trialguard'
+var appInsightsName = '${prefix}-ai-${uniqueString(resourceGroup().id)}'
+var logAnalyticsName = '${prefix}-law-${uniqueString(resourceGroup().id)}'
 
 // Endpoints are deterministic from names — computed here to avoid circular module dependencies
 var openAiEndpoint = 'https://${openAiAccountName}.openai.azure.com/'
 var aiProjectEndpoint = 'https://${aiFoundryAccountName}.cognitiveservices.azure.com/api/projects/${aiFoundryProjectName}'
+
+// Application Insights + Log Analytics — function telemetry
+module appinsights 'modules/appinsights.bicep' = {
+  name: 'appinsights'
+  params: {
+    location: location
+    workspaceName: logAnalyticsName
+    appInsightsName: appInsightsName
+  }
+}
 
 // Cosmos DB — serverless, lowest cost
 module cosmosdb 'modules/cosmosdb.bicep' = {
@@ -47,6 +59,7 @@ module functions 'modules/functions.bicep' = {
     keyVaultUri: 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/'
     openAiEndpoint: openAiEndpoint
     aiProjectEndpoint: aiProjectEndpoint
+    appInsightsConnectionString: appinsights.outputs.connectionString
   }
 }
 
