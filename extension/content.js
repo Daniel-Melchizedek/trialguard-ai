@@ -33,8 +33,19 @@ const CONFIRMATION_TEXT_SIGNALS = [
   "get started with your",
   "thank you for starting",
   "trial period begins",
-  "days remaining in your trial"
+  "days remaining in your trial",
+  "free trial starts",
+  "trial has begun",
+  "your trial is starting",
+  "free for the next",
+  "days of free access",
+  "you now have access",
+  "access is now active",
+  "subscription is active",
+  "plan is active",
+  "welcome, your"
 ];
+
 
 let alreadyChecked = false;
 let trialSent      = false;   // once true, never detect again on this page
@@ -212,6 +223,19 @@ document.addEventListener("submit", (e) => {
   }
 }, true);
 
+// ─── Click detection ──────────────────────────────────────────────────────────
+// On any click on a trial-related page, mark that the user has interacted and
+// schedule a re-check. The MutationObserver (formSubmitDetected path) will also
+// fire on DOM changes that follow, so this acts as a belt-and-suspenders fallback.
+let clickDebounceTimer = null;
+document.addEventListener("click", () => {
+  if (trialSent) return;
+  if (!hasTrialKeywords(document.body?.innerText || "")) return;
+  formSubmitDetected = true;
+  clearTimeout(clickDebounceTimer);
+  clickDebounceTimer = setTimeout(() => { alreadyChecked = false; checkPage(); }, 2500);
+}, true);
+
 // ─── Initial page check ───────────────────────────────────────────────────────
 checkPage();
 
@@ -238,7 +262,7 @@ function isModalOrDialog(mutations) {
     Array.from(m.addedNodes).some(n => {
       if (n.nodeType !== Node.ELEMENT_NODE) return false;
       const role = (n.getAttribute?.("role") || "").toLowerCase();
-      const cls  = (n.className || "").toLowerCase();
+      const cls  = (n.getAttribute?.("class") || "").toLowerCase();
       const id   = (n.id || "").toLowerCase();
       return role === "dialog" || role === "alertdialog" ||
         ["modal", "dialog", "popup", "overlay", "lightbox", "toast", "alert", "notification"]
@@ -271,14 +295,17 @@ const observer = new MutationObserver((mutations) => {
     return;
   }
 
-  // 3. New text injected that contains trial keywords OR confirmation signals
+  // 3. New text injected that contains trial keywords OR confirmation signals,
+  //    OR the user already clicked a trial action button (formSubmitDetected).
+  //    The latter handles multi-step SPA wizards where intermediate steps and
+  //    the post-activation confirmation may not contain those exact keywords.
   const newText = extractAddedText(mutations);
   if (newText.length > 40) {
     const hasKeyword = hasTrialKeywords(newText);
     const hasConfirm = hasConfirmationText(newText);
-    if (hasKeyword || hasConfirm) {
+    if (hasKeyword || hasConfirm || formSubmitDetected) {
       alreadyChecked = false;
-      console.log("[TrialGuard] Dynamic content with trial/confirmation text injected");
+      console.log("[TrialGuard] Dynamic content injected — re-checking (formSubmitDetected:", formSubmitDetected, ")");
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(checkPage, 800);
     }

@@ -13,6 +13,7 @@
     "@azure/communication-email": "^1.0.0",
     "@azure/identity": "^4.4.1",
     "@azure/openai": "^2.0.0",
+    "@azure/ai-agents": "^1.0.0",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {

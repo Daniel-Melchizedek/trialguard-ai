@@ -1,15 +1,24 @@
 const { AzureOpenAI } = require("@azure/openai");
+const { DefaultAzureCredential, getBearerTokenProvider } = require("@azure/identity");
 const { fetchProductContext } = require("./webRetriever");
 
 let _client = null;
 
 function getClient() {
   if (!_client) {
+    // Use managed identity (DefaultAzureCredential) — no API key needed.
+    // The function app's system identity must have "Cognitive Services OpenAI User" role
+    // on the Azure OpenAI resource (provisioned via openai.bicep).
+    const credential = new DefaultAzureCredential();
+    const azureADTokenProvider = getBearerTokenProvider(
+      credential,
+      "https://cognitiveservices.azure.com/.default"
+    );
     _client = new AzureOpenAI({
       endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-      apiKey: process.env.AZURE_OPENAI_KEY,
+      azureADTokenProvider,
       deployment: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini",
-      apiVersion: "2024-10-21"
+      apiVersion: "2024-10-21",
     });
   }
   return _client;
@@ -52,11 +61,11 @@ async function generateTrialTip(trial) {
     model: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini",
     messages: [
       { role: "system", content: systemMsg },
-      { role: "user", content: userMsg }
+      { role: "user", content: userMsg },
     ],
     max_tokens: 120,
     temperature: 0.9,
-    top_p: 0.95
+    top_p: 0.95,
   });
 
   return (
