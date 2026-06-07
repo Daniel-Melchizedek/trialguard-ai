@@ -1,4 +1,4 @@
-const { AzureOpenAI } = require("@azure/openai");
+const { AzureOpenAI } = require("openai");
 const { DefaultAzureCredential, getBearerTokenProvider } = require("@azure/identity");
 const { fetchProductContext } = require("./webRetriever");
 
@@ -6,9 +6,6 @@ let _client = null;
 
 function getClient() {
   if (!_client) {
-    // Use managed identity (DefaultAzureCredential) — no API key needed.
-    // The function app's system identity must have "Cognitive Services OpenAI User" role
-    // on the Azure OpenAI resource (provisioned via openai.bicep).
     const credential = new DefaultAzureCredential();
     const azureADTokenProvider = getBearerTokenProvider(
       credential,
