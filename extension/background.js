@@ -169,22 +169,96 @@ async function callAionPlan(trial, pageText, tabId) {
   return JSON.parse(result.text);
 }
 
-// ─── Cancellation — MCP tool mapping ─────────────────────────────────────────
+// ─── Cancellation — direct browser actions ───────────────────────────────────
+// Uses Chrome extension APIs directly so actions run in the user's real tab/session.
 
-const MCP_TOOL = {
-  navigate: "browser_navigate",
-  click:    "browser_click",
-  fill:     "browser_fill",
-  wait:     "browser_wait_for_selector"
+async function waitForTabLoad(tabId, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      if (tab.status === "complete") return;
+    } catch { return; }
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
+const BrowserActions = {
+  async navigate(tabId, url) {
+    await chrome.tabs.update(tabId, { url });
+    await waitForTabLoad(tabId);
+  },
+
+  async click(tabId, selector) {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: (sel) => {
+        try {
+          const el = document.querySelector(sel);
+          if (!el) return { error: `Element not found: ${sel}` };
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.click();
+          return { ok: true };
+        } catch (e) {
+          return { error: e.message };
+        }
+      },
+      args: [selector]
+    });
+    const r = results[0]?.result;
+    if (r?.error) throw new Error(r.error);
+  },
+
+  async fill(tabId, selector, value) {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: (sel, val) => {
+        try {
+          const el = document.querySelector(sel);
+          if (!el) return { error: `Element not found: ${sel}` };
+          // Use native setter so React/Vue controlled inputs pick up the change
+          const setter = Object.getOwnPropertyDescriptor(
+            Object.getPrototypeOf(el), "value"
+          )?.set;
+          setter ? setter.call(el, val) : (el.value = val);
+          el.dispatchEvent(new Event("input",  { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          return { ok: true };
+        } catch (e) {
+          return { error: e.message };
+        }
+      },
+      args: [selector, value]
+    });
+    const r = results[0]?.result;
+    if (r?.error) throw new Error(r.error);
+  },
+
+  async wait(tabId, selector, timeoutMs = 10000) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: (sel) => !!document.querySelector(sel),
+        args: [selector]
+      });
+      if (results[0]?.result) return;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    throw new Error(`Timed out waiting for: ${selector}`);
+  }
 };
 
-function buildMcpArgs(step) {
+async function executeStep(step, tabId) {
   switch (step.action) {
-    case "navigate": return { url: step.value };
-    case "click":    return { selector: step.selector };
-    case "fill":     return { selector: step.selector, value: step.value };
-    case "wait":     return { selector: step.selector };
-    default:         return {};
+    case "navigate": return BrowserActions.navigate(tabId, step.value);
+    case "click":    return BrowserActions.click(tabId, step.selector);
+    case "fill":     return BrowserActions.fill(tabId, step.selector, step.value);
+    case "wait":     return BrowserActions.wait(tabId, step.selector);
+    default: throw new Error(`Unknown action: ${step.action}`);
   }
 }
 
@@ -200,15 +274,7 @@ async function runCancellationAgent(trial, tabId) {
     patchTrialRemote(trialId, trial.userEmail, fields, backendUrl).catch(() => {});
 
   try {
-    // 1 — Check MCP availability
-    spToast("planning", "Checking Playwright MCP connection…", trialId);
-    const available = await MCPClient.isAvailable();
-    if (!available) {
-      notifySP("mcp_unavailable", { trialId });
-      return;
-    }
-
-    // 2 — Plan with Aion
+    // 1 — Plan with Aion
     spToast("planning", "Aion is planning the cancellation…", trialId);
     notifySP("phase", { phase: "planning", trialId });
 
@@ -227,13 +293,20 @@ async function runCancellationAgent(trial, tabId) {
       return;
     }
 
-    // 3 — Execute steps immediately
+    // 2 — Execute steps directly in the user's tab
     await patch({
       cancellationStatus: "running",
       cancellationPlan: plan.steps,
       cancellationStartedAt: new Date().toISOString()
     });
     notifySP("phase", { phase: "running", trialId, stepCount: plan.steps.length });
+
+    // Ensure the target tab is focused before automation starts
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      await chrome.windows.update(tab.windowId, { focused: true });
+      await chrome.tabs.update(tabId, { active: true });
+    } catch {}
 
     for (const step of plan.steps) {
       if (ac.signal.aborted) {
@@ -248,10 +321,9 @@ async function runCancellationAgent(trial, tabId) {
       notifySP("step_start", { step, trialId });
 
       try {
-        await MCPClient.callTool(MCP_TOOL[step.action] || step.action, buildMcpArgs(step), ac.signal);
+        await executeStep(step, tabId);
         notifySP("step_done", { step, trialId });
       } catch (err) {
-        // If the user hit Stop, the fetch throws an AbortError — treat as stopped, not failed
         if (ac.signal.aborted) {
           await patch({ cancellationStatus: "stopped" });
           await updateLocalTrial(trialId, { cancellationStatus: "stopped" });
