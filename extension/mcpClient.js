@@ -1,6 +1,7 @@
 // Playwright MCP HTTP client — loaded in service worker via importScripts('mcpClient.js')
 const MCPClient = (() => {
-  const BASE = "http://localhost:3333";
+  const ROOT = "http://localhost:3333";
+  const BASE = "http://localhost:3333/mcp";
   let _id = 1;
 
   async function rpc(method, params, timeoutMs = 30000) {
@@ -55,7 +56,7 @@ const MCPClient = (() => {
   return {
     async isAvailable() {
       try {
-        const r = await fetch(BASE, { signal: AbortSignal.timeout(1500) });
+        const r = await fetch(ROOT, { signal: AbortSignal.timeout(1500) });
         return r.status < 500;
       } catch {
         return false;
