@@ -1,0 +1,162 @@
+@page
+@model CancelModel
+@{
+    ViewData["Title"] = "Cancel Trial";
+}
+
+<div class="cancel-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-8">
+
+                @if (Model.ShowSuccess && Model.Subscription is not null)
+                {
+                    @* ── State 3: Cancelled successfully ── *@
+                    <div class="cancel-card text-center">
+                        <div class="cancel-icon-wrap cancel-icon-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h1 class="cancel-title">Trial Cancelled</h1>
+                        <p class="cancel-subtitle">
+                            Your NeuroRevive trial for <strong>@Model.Subscription.Email</strong> has been successfully cancelled.
+                            You won't be charged.
+                        </p>
+                        <div class="cancel-detail-box">
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-person me-1"></i>Account</span>
+                                <span>@Model.Subscription.FirstName @Model.Subscription.LastName</span>
+                            </div>
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-x-circle me-1 text-danger"></i>Cancelled on</span>
+                                <span>@(Model.Subscription.CancelledAtUtc?.ToString("MMM d, yyyy HH:mm") ?? "") UTC</span>
+                            </div>
+                        </div>
+                        <p class="cancel-footnote">Changed your mind? You can start a new free trial anytime.</p>
+                        <div class="d-flex flex-column gap-2 mt-3">
+                            <a asp-page="/Subscribe" class="btn btn-brand-primary">
+                                <i class="bi bi-rocket-takeoff me-2"></i>Start a New Trial
+                            </a>
+                            <a asp-page="/Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-house me-2"></i>Back to Home
+                            </a>
+                        </div>
+                    </div>
+                }
+                else if (Model.ShowConfirmation && Model.Subscription is not null)
+                {
+                    @* ── State 2: Subscription found — show details and confirm ── *@
+                    <div class="cancel-card">
+                        <div class="cancel-icon-wrap cancel-icon-warn">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <h1 class="cancel-title text-center">Cancel Your Trial?</h1>
+                        <p class="cancel-subtitle text-center">We found your subscription. Review the details below before confirming.</p>
+
+                        <div class="cancel-detail-box">
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-person me-1"></i>Name</span>
+                                <span>@Model.Subscription.FirstName @Model.Subscription.LastName</span>
+                            </div>
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-envelope me-1"></i>Email</span>
+                                <span class="text-truncate" style="max-width:180px" title="@Model.Subscription.Email">@Model.Subscription.Email</span>
+                            </div>
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-calendar me-1"></i>Started</span>
+                                <span>@Model.Subscription.SubscribedAtUtc.ToString("MMM d, yyyy")</span>
+                            </div>
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-calendar-x me-1"></i>Expires</span>
+                                <span>@Model.Subscription.TrialEndsAtUtc.ToString("MMM d, yyyy")</span>
+                            </div>
+                            <div class="cancel-detail-row">
+                                <span class="cancel-detail-label"><i class="bi bi-circle-fill me-1"></i>Status</span>
+                                @if (Model.Subscription.IsCancelled)
+                                {
+                                    <span class="cancel-status-badge badge-cancelled">Already cancelled</span>
+                                }
+                                else if (Model.Subscription.IsExpired)
+                                {
+                                    <span class="cancel-status-badge badge-expired">Expired</span>
+                                }
+                                else
+                                {
+                                    <span class="cancel-status-badge badge-active">Active</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (Model.Subscription.IsCancelled)
+                        {
+                            <div class="alert alert-secondary mt-3 text-center small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                This trial was already cancelled on
+                                <strong>@(Model.Subscription.CancelledAtUtc?.ToString("MMM d, yyyy") ?? "")</strong>.
+                            </div>
+                            <a asp-page="/Index" class="btn btn-outline-secondary w-100 mt-2">
+                                <i class="bi bi-house me-2"></i>Back to Home
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="cancel-action-row mt-4">
+                                <form method="post" asp-page-handler="Cancel">
+                                    <input type="hidden" asp-for="Email" />
+                                    <button type="submit" class="btn btn-cancel-confirm w-100">
+                                        <i class="bi bi-x-circle me-2"></i>Yes, cancel my trial
+                                    </button>
+                                </form>
+                                <a asp-page="/Index" class="btn btn-outline-secondary w-100 mt-2">
+                                    <i class="bi bi-heart me-2"></i>Keep my trial
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @* ── State 1: Email lookup form ── *@
+                    <div class="cancel-card">
+                        <div class="cancel-icon-wrap cancel-icon-red">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                        <h1 class="cancel-title text-center">Cancel Your Trial</h1>
+                        <p class="cancel-subtitle text-center">
+                            Enter the email address you used to sign up and we'll look up your trial.
+                        </p>
+
+                        @if (!string.IsNullOrEmpty(Model.LookupError))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                                <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+                                <span>@Model.LookupError</span>
+                            </div>
+                        }
+
+                        <form method="post" asp-page-handler="Lookup">
+                            <div class="mb-4">
+                                <label asp-for="Email" class="form-label fw-semibold">Email address</label>
+                                <input asp-for="Email" class="form-control form-control-lg"
+                                       placeholder="you@example.com" autocomplete="email" />
+                                <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                            </div>
+                            <button type="submit" class="btn btn-cancel-lookup w-100">
+                                <i class="bi bi-search me-2"></i>Find my trial
+                            </button>
+                        </form>
+
+                        <p class="cancel-footnote text-center mt-4">
+                            Don't want to cancel?
+                            <a asp-page="/Index" class="text-primary text-decoration-none fw-semibold">Go back home</a>
+                        </p>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

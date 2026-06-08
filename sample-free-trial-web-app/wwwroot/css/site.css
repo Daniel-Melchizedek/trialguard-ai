@@ -682,3 +682,135 @@ body {
 .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* =========================================================
+   Cancel Trial page
+   ========================================================= */
+
+.cancel-section {
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, #fdf4ff 0%, #f0f4ff 100%);
+    display: flex;
+    align-items: center;
+    padding: 3rem 0;
+}
+
+.cancel-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 4px 24px rgba(79, 70, 229, 0.08);
+    border: 1px solid #E5E7EB;
+}
+
+.cancel-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1.25rem;
+}
+
+.cancel-icon-red     { background: #FEF2F2; color: #DC2626; }
+.cancel-icon-warn    { background: #FFFBEB; color: #D97706; }
+.cancel-icon-success { background: #F0FDF4; color: #16A34A; }
+
+.cancel-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 0.5rem;
+}
+
+.cancel-subtitle {
+    color: var(--text-muted-custom);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.cancel-footnote {
+    color: var(--text-muted-custom);
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+.cancel-detail-box {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.cancel-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+}
+
+.cancel-detail-label {
+    color: var(--text-muted-custom);
+    flex-shrink: 0;
+}
+
+.cancel-status-badge {
+    display: inline-block;
+    padding: 0.2em 0.65em;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.badge-active    { background: #DCFCE7; color: #15803D; }
+.badge-expired   { background: #FEF3C7; color: #B45309; }
+.badge-cancelled { background: #F3F4F6; color: #6B7280; }
+
+.btn-cancel-lookup {
+    background: var(--brand-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+.btn-cancel-lookup:hover { background: #4338CA; color: #fff; }
+
+.btn-cancel-confirm {
+    background: #DC2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+.btn-cancel-confirm:hover { background: #B91C1C; color: #fff; }
+
+.btn-nav-cancel {
+    background: transparent;
+    color: #DC2626;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+.btn-nav-cancel:hover {
+    background: #FEF2F2;
+    border-color: #FCA5A5;
+    color: #B91C1C;
+}

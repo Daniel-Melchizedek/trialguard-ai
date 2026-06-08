@@ -48,6 +48,35 @@ public class SubscriptionService
         return subscription;
     }
 
+    public async Task<TrialSubscription?> GetSubscriptionByEmailAsync(string email)
+    {
+        var subscriptions = await ReadAllAsync();
+        return subscriptions.FirstOrDefault(s => s.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<TrialSubscription?> CancelSubscriptionAsync(string email)
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            var subscriptions = await ReadAllAsync();
+            var sub = subscriptions.FirstOrDefault(s => s.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+            if (sub is null) return null;
+            if (sub.IsCancelled) return sub;
+
+            sub.IsCancelled = true;
+            sub.CancelledAtUtc = DateTime.UtcNow;
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            await File.WriteAllTextAsync(_filePath, JsonSerializer.Serialize(subscriptions, options));
+            return sub;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     private async Task<List<TrialSubscription>> ReadAllAsync()
     {
         if (!File.Exists(_filePath))
