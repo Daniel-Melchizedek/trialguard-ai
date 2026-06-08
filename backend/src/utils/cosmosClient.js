@@ -61,4 +61,10 @@ async function markDailyReminderSent(id, userEmail) {
   ]);
 }
 
-module.exports = { upsertTrial, getTrialsDueForReminder, markReminderSent, markDailyReminderSent };
+async function patchCancellationStatus(id, userEmail, fields) {
+  const container = getContainer();
+  const ops = Object.entries(fields).map(([k, v]) => ({ op: "set", path: `/${k}`, value: v }));
+  await container.item(id, userEmail).patch(ops);
+}
+
+module.exports = { upsertTrial, getTrialsDueForReminder, markReminderSent, markDailyReminderSent, patchCancellationStatus };

@@ -134,4 +134,44 @@ h1 { font-size: 15px; font-weight: 700; color: #f1f5f9; }
 }
 .ai-init-btn:hover { background: #1e40af; }
 
+.btn-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #1e293b;
+  color: #f87171;
+  border: 1px solid #7f1d1d55;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-cancel:hover { background: #2d1515; border-color: #991b1b; }
+
+.badge-cancelled {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 11px;
+  color: #86efac;
+  font-weight: 600;
+}
+
+.badge-cancelling {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 11px;
+  color: #93c5fd;
+}
+
+.badge-failed {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 11px;
+  color: #fca5a5;
+}
+
 .hidden { display: none !important; }

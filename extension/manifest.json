@@ -7,7 +7,8 @@
     "storage",
     "scripting",
     "activeTab",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -27,6 +28,9 @@
       "world": "ISOLATED"
     }
   ],
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

@@ -43,6 +43,37 @@ function renderTrial(trial) {
     <div class="trial-meta">${trial.websiteUrl || ""}</div>
     <div class="trial-date ${dateClass}">${dateLabel}</div>
   `;
+
+  const status = trial.cancellationStatus || "none";
+  if (status === "completed") {
+    const badge = document.createElement("span");
+    badge.className = "badge-cancelled";
+    badge.textContent = "Cancelled ✓";
+    card.appendChild(badge);
+  } else if (status === "running" || status === "planning") {
+    const badge = document.createElement("span");
+    badge.className = "badge-cancelling";
+    badge.innerHTML = `<span class="spinner"></span> Cancelling…`;
+    card.appendChild(badge);
+  } else if (status === "failed") {
+    const badge = document.createElement("span");
+    badge.className = "badge-failed";
+    badge.textContent = "Cancellation failed";
+    card.appendChild(badge);
+  } else {
+    const btn = document.createElement("button");
+    btn.className = "btn-cancel";
+    btn.textContent = "Cancel Trial";
+    btn.addEventListener("click", async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      await chrome.storage.session.set({ activeCancellation: { trial, tabId: tab.id } });
+      await chrome.sidePanel.open({ windowId: tab.windowId });
+      chrome.runtime.sendMessage({ action: "requestCancellation", trial, tabId: tab.id });
+      window.close();
+    });
+    card.appendChild(btn);
+  }
+
   return card;
 }
 
