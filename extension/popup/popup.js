@@ -55,15 +55,16 @@ function renderTrial(trial) {
     badge.className = "badge-cancelling";
     badge.innerHTML = `<span class="spinner"></span> Cancelling…`;
     card.appendChild(badge);
-  } else if (status === "failed") {
-    const badge = document.createElement("span");
-    badge.className = "badge-failed";
-    badge.textContent = "Cancellation failed";
-    card.appendChild(badge);
   } else {
+    if (status === "failed" || status === "stopped") {
+      const badge = document.createElement("span");
+      badge.className = "badge-failed";
+      badge.textContent = status === "stopped" ? "Stopped" : "Last attempt failed";
+      card.appendChild(badge);
+    }
     const btn = document.createElement("button");
     btn.className = "btn-cancel";
-    btn.textContent = "Cancel Trial";
+    btn.textContent = (status === "failed" || status === "stopped") ? "Retry Cancellation" : "Cancel Trial";
     btn.addEventListener("click", async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       await chrome.storage.session.set({ activeCancellation: { trial, tabId: tab.id } });
