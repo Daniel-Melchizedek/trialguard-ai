@@ -248,9 +248,17 @@ async function runCancellationAgent(trial, tabId) {
       notifySP("step_start", { step, trialId });
 
       try {
-        await MCPClient.callTool(MCP_TOOL[step.action] || step.action, buildMcpArgs(step));
+        await MCPClient.callTool(MCP_TOOL[step.action] || step.action, buildMcpArgs(step), ac.signal);
         notifySP("step_done", { step, trialId });
       } catch (err) {
+        // If the user hit Stop, the fetch throws an AbortError — treat as stopped, not failed
+        if (ac.signal.aborted) {
+          await patch({ cancellationStatus: "stopped" });
+          await updateLocalTrial(trialId, { cancellationStatus: "stopped" });
+          spToast("stopped", "Cancellation stopped.", trialId);
+          notifySP("phase", { phase: "stopped", trialId });
+          return;
+        }
         const errMsg = `Step ${step.index} failed: ${err.message}`;
         spToast("error", errMsg, trialId);
         notifySP("step_error", { step, error: err.message, trialId });

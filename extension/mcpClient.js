@@ -4,7 +4,7 @@ const MCPClient = (() => {
   const ROOT     = "http://localhost:3333";
   const ENDPOINT = "http://localhost:3333/mcp";
   let _id        = 1;
-  let _sessionId = null;   // set after initialize
+  let _sessionId = null;
   let _initDone  = false;
 
   function buildHeaders() {
@@ -16,25 +16,38 @@ const MCPClient = (() => {
     return h;
   }
 
-  async function post(body, timeoutMs = 30000) {
+  // Combine a step-level timeout with an optional external abort signal
+  function makeSignal(timeoutMs, abortSignal) {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    if (!abortSignal) return timeout;
+    // AbortSignal.any() is Chrome/Edge 116+ — use a manual combiner as fallback
+    if (typeof AbortSignal.any === "function") return AbortSignal.any([timeout, abortSignal]);
+    const ac = new AbortController();
+    const abort = () => ac.abort();
+    if (timeout.aborted || abortSignal.aborted) { ac.abort(); return ac.signal; }
+    timeout.addEventListener("abort", abort, { once: true });
+    abortSignal.addEventListener("abort", abort, { once: true });
+    return ac.signal;
+  }
+
+  async function post(body, timeoutMs = 30000, abortSignal = null) {
     const r = await fetch(ENDPOINT, {
       method: "POST",
       headers: buildHeaders(),
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs)
+      signal: makeSignal(timeoutMs, abortSignal)
     });
-    // Capture session ID whenever the server sends one
     const sid = r.headers.get("Mcp-Session-Id");
     if (sid) _sessionId = sid;
     return r;
   }
 
-  async function rpc(method, params, timeoutMs = 30000) {
-    const r = await post({ jsonrpc: "2.0", id: _id++, method, params }, timeoutMs);
+  async function rpc(method, params, timeoutMs = 30000, abortSignal = null) {
+    const r = await post({ jsonrpc: "2.0", id: _id++, method, params }, timeoutMs, abortSignal);
     if (!r.ok) throw new Error(`MCP ${method} failed: HTTP ${r.status}`);
 
     const ct = r.headers.get("Content-Type") || "";
-    if (ct.includes("text/event-stream")) return _readSSE(r.body);
+    if (ct.includes("text/event-stream")) return _readSSE(r.body, abortSignal);
 
     const data = await r.json();
     if (data.error) throw new Error(data.error.message ?? JSON.stringify(data.error));
@@ -42,26 +55,30 @@ const MCPClient = (() => {
   }
 
   async function notify(method, params = {}) {
-    // Notifications have no id and expect no response body
     await post({ jsonrpc: "2.0", method, params }, 5000).catch(() => {});
   }
 
-  async function ensureInit() {
+  async function ensureInit(abortSignal = null) {
     if (_initDone) return;
     await rpc("initialize", {
       protocolVersion: "2025-03-26",
       capabilities: {},
       clientInfo: { name: "TrialGuard", version: "1.0.0" }
-    }, 10000);
+    }, 10000, abortSignal);
     await notify("notifications/initialized");
     _initDone = true;
   }
 
-  async function _readSSE(stream) {
+  async function _readSSE(stream, abortSignal = null) {
     const reader = stream.getReader();
     const dec = new TextDecoder();
     let buf = "";
     let last = null;
+
+    // If aborted externally, release the reader
+    const onAbort = () => reader.cancel().catch(() => {});
+    abortSignal?.addEventListener("abort", onAbort, { once: true });
+
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -81,6 +98,7 @@ const MCPClient = (() => {
         }
       }
     } finally {
+      abortSignal?.removeEventListener("abort", onAbort);
       reader.releaseLock();
     }
     return last;
@@ -102,9 +120,9 @@ const MCPClient = (() => {
       return result?.tools ?? [];
     },
 
-    async callTool(toolName, toolInput) {
-      await ensureInit();
-      return rpc("tools/call", { name: toolName, arguments: toolInput });
+    async callTool(toolName, toolInput, abortSignal = null) {
+      await ensureInit(abortSignal);
+      return rpc("tools/call", { name: toolName, arguments: toolInput }, 30000, abortSignal);
     }
   };
 })();
