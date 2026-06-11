@@ -69,76 +69,60 @@ function renderTrial(trial) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       await chrome.storage.session.set({ activeCancellation: { trial, tabId: tab.id } });
       await chrome.sidePanel.open({ windowId: tab.windowId });
-      chrome.runtime.sendMessage({ action: "requestCancellation", trial, tabId: tab.id });
+      // Side panel triggers requestCancellation itself once its onMessage listener is registered.
       window.close();
     });
     card.appendChild(btn);
   }
 
+  // Dismiss (×) — remove a trial from the list (e.g. a false positive like a free plan).
+  const dismiss = document.createElement("button");
+  dismiss.className = "btn-dismiss";
+  dismiss.title = "Remove this trial";
+  dismiss.setAttribute("aria-label", "Remove this trial");
+  dismiss.textContent = "×";
+  dismiss.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dismissTrial(trial);
+  });
+  card.appendChild(dismiss);
+
   return card;
+}
+
+// Remove a trial from storage (by id, falling back to product+url) and re-render.
+function dismissTrial(trial) {
+  chrome.storage.sync.get(["trials"], data => {
+    const trials = (data.trials || []).filter(t =>
+      trial.id ? t.id !== trial.id
+               : !(t.productName === trial.productName && t.websiteUrl === trial.websiteUrl)
+    );
+    chrome.storage.sync.set({ trials }, () => {
+      console.log("[TrialGuard Popup] Dismissed trial:", trial.productName);
+      renderTrialList(trials);
+    });
+  });
 }
 
 async function checkAionStatus() {
   const statusEl = document.getElementById("ai-status");
-
   if (typeof LanguageModel === "undefined") {
     statusEl.className = "ai-status error";
-    statusEl.innerHTML = "⚠️ LanguageModel API not found. Requires Edge 150+ Canary/Dev with Aion 1.0.";
+    statusEl.textContent = "⚠️ Requires Edge with Aion 1.0 enabled.";
     statusEl.classList.remove("hidden");
     return;
   }
-
-  // LanguageModel.availability() triggers an uncatchable Edge browser error regardless
-  // of options passed. Use create() with expectedOutputLanguages instead — it does not
-  // trigger that error and covers all states: resolves instantly if model is ready,
-  // fires downloadprogress events if a download is needed, rejects if unavailable.
-  const stored = await chrome.storage.local.get(["aionReady", "aionError"]);
-
-  if (stored.aionReady) {
+  const { aionReady } = await chrome.storage.local.get(["aionReady"]);
+  if (aionReady) {
     statusEl.className = "ai-status ready";
-    statusEl.textContent = "✓ Aion 1.0 ready — on-device AI active";
+    statusEl.textContent = "✓ Aion 1.0 ready";
     statusEl.classList.remove("hidden");
-    setTimeout(() => statusEl.classList.add("hidden"), 3000);
-    return;
+    setTimeout(() => statusEl.classList.add("hidden"), 2000);
   }
-
-  statusEl.className = "ai-status downloading";
-  statusEl.innerHTML = `<span class="spinner"></span> Checking Aion 1.0 status…`;
-  statusEl.classList.remove("hidden");
-
-  let downloadStarted = false;
-
-  LanguageModel.create({
-    expectedOutputLanguages: ["en"],
-    monitor(m) {
-      m.addEventListener("downloadprogress", e => {
-        downloadStarted = true;
-        const pct = e.total > 0 ? Math.round((e.loaded / e.total) * 100) : null;
-        const pctTxt = pct != null ? `${pct}%` : `${(e.loaded / 1024 / 1024).toFixed(0)} MB`;
-        statusEl.innerHTML = `<span class="spinner"></span> Downloading Aion 1.0… ${pctTxt}`;
-        chrome.storage.local.set({
-          aionProgress: {
-            loaded: e.loaded, total: e.total, pct, ts: Date.now()
-          }
-        });
-      });
-    }
-  }).then(session => {
-    session.destroy();
-    chrome.storage.local.set({ aionReady: true, aionProgress: null });
-    statusEl.className = "ai-status ready";
-    statusEl.textContent = "✓ Aion 1.0 ready — on-device AI active";
-    statusEl.classList.remove("hidden");
-    setTimeout(() => statusEl.classList.add("hidden"), 3000);
-  }).catch(err => {
-    console.warn("[TrialGuard] LanguageModel.create() probe failed:", err.message);
-    statusEl.className = "ai-status error";
-    statusEl.textContent = "⚠️ Aion 1.0 unavailable on this device.";
-    statusEl.classList.remove("hidden");
-  });
+  // Not ready yet — agent initialises on demand when Cancel Trial is clicked
 }
 
-checkAionStatus();
+setTimeout(checkAionStatus, 0);
 
 const trialList  = document.getElementById("trial-list");
 const emptyState = document.getElementById("empty-state");

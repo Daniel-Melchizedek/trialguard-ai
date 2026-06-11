@@ -24,6 +24,14 @@ const CONFIRMATION_TEXT_SIGNALS = [
   "trial is active",
   "you're all set",
   "you are all set",
+  "you're starting with",
+  "you are starting with",
+  "free for 14 days",
+  "free for 7 days",
+  "free for 30 days",
+  "extend your trial",
+  "remaining in your free trial",
+  "left in your free trial",
   "your subscription has started",
   "trial activated",
   "you've been enrolled",
@@ -98,32 +106,38 @@ async function detectTrialWithAion(pageText, signals) {
   const today = new Date().toISOString().slice(0, 10);
   const session = await LanguageModel.create({ temperature: 0.2, topK: 10 });
 
-  // Strict prompt: requires BOTH a success message AND a clear trial duration/end date
-  const prompt = `You are a strict free trial enrollment detector. Today is ${today}.
+  // Detect ONLY a time-limited free TRIAL the user is currently on — NOT a free plan/tier.
+  const prompt = `You are a free TRIAL enrollment detector. Today is ${today}.
 
-Return detected:true ONLY when ALL THREE conditions are met:
-  1. The page contains an explicit SUCCESS or ACTIVATION message — e.g.:
-       "Your free trial has started", "Trial activated successfully",
-       "Your trial is now active", "Welcome, your trial begins today",
-       "You're now on a free trial", "Subscription started"
-  2. The page explicitly states the trial duration or end date — e.g.:
-       "7-day free trial", "trial ends on June 11", "valid until 2026-06-11",
-       "your trial expires in 30 days", "free until July 4"
-  3. This is clearly a POST-SIGNUP confirmation screen, NOT a marketing/pricing page.
+A FREE TRIAL is TIME-LIMITED and will CONVERT TO A PAID CHARGE when it ends.
+A FREE PLAN / FREE TIER / "freemium" / "basic (free)" / "free forever" / "always free" is
+PERMANENT and never charges — that is NOT a trial.
 
-Return detected:false if ANY of these is true:
-  - Page is a landing/marketing page promoting a trial (user hasn't signed up yet)
-  - Page is a signup or payment form
-  - There is a success message but NO trial duration or end date is mentioned
-  - The trial duration or end date is vague or missing
+Return detected:true ONLY when ALL of these hold:
+  A. The user is CURRENTLY ON, or HAS JUST STARTED, a free TRIAL (active/present wording):
+       "Your free trial has started", "You're now on a free trial",
+       "Welcome to your <N>-day trial", "<N> days left in your trial",
+       "Your trial ends on <date>", "Extend your trial", "Free for <N> days then $X".
+  B. There is a concrete DURATION or END DATE (e.g. "14 days", "7 days left", "ends June 11").
+  C. It clearly ENDS and would start charging (it's a trial, not a permanent free plan).
+
+Return detected:false for ANY of these:
+  - The page mentions a "Free Plan", "Free tier", "Basic (free)", "free forever", "always free",
+    or a permanent free account — these are NOT trials, even if the word "free" appears.
+  - A normal app/workspace/home/dashboard page (e.g. "How would you like to start?", a doc
+    editor, a product home) with no trial countdown or trial-end date.
+  - Marketing / pricing / signup pages that only INVITE you to start a trial.
+  - The word "free" or "plan" appears but there is NO trial countdown / trial-end date.
+
+If unsure, or if it looks like a free plan rather than a time-limited trial, return detected:false.
 
 Return ONLY valid JSON, no markdown, no explanation.
 
-If ALL THREE conditions met:
-{"detected":true,"productName":"<exact product name>","trialDurationDays":<number>,"trialEndDate":"<YYYY-MM-DD only, e.g. 2026-06-11 — no time, no timezone, just the date>","websiteUrl":"${window.location.hostname}"}
+If a genuine time-limited trial:
+{"detected":true,"productName":"<exact product name>","trialDurationDays":<number>,"trialEndDate":"<YYYY-MM-DD only — no time/timezone>","websiteUrl":"${window.location.hostname}"}
 
 Otherwise:
-{"detected":false,"reason":"<no_success_message|no_end_date|landing_page|signup_form|unclear>"}
+{"detected":false,"reason":"<free_plan|app_page|landing_page|signup_form|no_end_date|unclear>"}
 
 Webpage text (first 3000 chars):
 ${pageText.slice(0, 3000)}`;
@@ -154,15 +168,42 @@ ${pageText.slice(0, 3000)}`;
   const parsed = extractJSON(raw);
   if (parsed) {
     console.log("[TrialGuard] Parsed result:", parsed);
+    // ── Guard against free-plan / no-end-date false positives ──
+    if (parsed.detected) {
+      const nameAndText = `${parsed.productName || ""} ${pageText}`.toLowerCase();
+      // A permanent free plan/tier is NOT a trial — reject even if Aion said yes.
+      if (/free plan|free tier|freemium|always free|free forever|basic plan|basic \(free\)/.test(nameAndText)
+          && !/\btrial\b/.test((parsed.productName || "").toLowerCase())) {
+        console.log("[TrialGuard] Looks like a free PLAN/tier, not a trial — rejecting.");
+        return { detected: false, reason: "free_plan" };
+      }
+    }
     return parsed;
   }
   console.error("[TrialGuard] Failed to parse Aion output as JSON:", raw);
   return null;
 }
 
+// Account-management / billing / cancellation / auth pages — these are where users MANAGE or
+// CANCEL existing subscriptions, NOT where they enroll. Detecting here produces false positives
+// (e.g. flagging "Adobe Creative Cloud" while the cancellation agent is navigating the portal).
+function isManagementPage() {
+  const href = (window.location.href || "").toLowerCase();
+  const host = (window.location.hostname || "").toLowerCase();
+  return /^account\.|(^|\.)auth\.|(^|\.)signin\.|(^|\.)login\./.test(host)
+      || /\/(account|plans|billing|subscriptions?|manage|cancel|deeplink)(\b|\/|#|\?)/.test(href)
+      || /password|signin|sign-in|log[-_]?in/.test(href);
+}
+
 async function checkPage() {
   if (trialSent)      return;   // already confirmed a trial on this page — stop forever
   if (alreadyChecked) return;
+
+  // Never auto-detect on account/billing/cancellation/auth portals (manage ≠ enroll).
+  if (isManagementPage()) {
+    console.log("[TrialGuard] Account/management/cancellation page — skipping trial detection");
+    return;
+  }
 
   const pageText = document.body?.innerText || "";
 

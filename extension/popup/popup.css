@@ -63,12 +63,30 @@ h1 { font-size: 15px; font-weight: 700; color: #f1f5f9; }
 }
 
 .trial-card {
+  position: relative;
   margin: 4px 10px;
   padding: 10px 12px;
   background: #1e293b;
   border-radius: 8px;
   border-left: 3px solid #3b82f6;
 }
+
+.btn-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  padding: 0;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.btn-dismiss:hover { background: #334155; color: #e2e8f0; }
 
 .trial-card.expiring-soon { border-left-color: #f59e0b; }
 .trial-card.expired { border-left-color: #ef4444; opacity: 0.6; }

@@ -6,7 +6,7 @@ const titleEl   = document.getElementById("sp-title");
 const subtitleEl = document.getElementById("sp-subtitle");
 const btnStop   = document.getElementById("btn-stop");
 const btnClose  = document.getElementById("btn-close");
-const mcpSetup  = document.getElementById("sp-mcp-setup");
+const aionSetup = document.getElementById("sp-aion-setup");
 
 function appendToast(type, message) {
   const entry = document.createElement("div");
@@ -16,7 +16,8 @@ function appendToast(type, message) {
   if (type === "step" || type === "planning") {
     iconEl.className = "toast-icon spinning";
   } else {
-    const icons = { done: "✓", error: "✗", stopped: "■", info: "●" };
+    const icons = { done: "✓", error: "✗", stopped: "■", info: "●",
+                    select: "🔍", context: "📄", confirm: "✓", reconsider: "↻", password: "🔒", prompt: "🧠" };
     iconEl.className = "toast-icon";
     iconEl.textContent = icons[type] || "●";
   }
@@ -73,6 +74,13 @@ async function init() {
   titleEl.textContent = `Cancelling ${active.trial.productName}`;
   subtitleEl.textContent = "Starting…";
   btnStop.classList.remove("hidden");
+
+  // Listener is now registered — safe to ask background to start the agent.
+  chrome.runtime.sendMessage({
+    action: "requestCancellation",
+    trial: active.trial,
+    tabId: active.tabId
+  });
 }
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -97,11 +105,11 @@ chrome.runtime.onMessage.addListener((message) => {
       break;
 
     case "phase": {
-      const { phase, stepCount } = payload;
-      if (phase === "planning") {
-        subtitleEl.textContent = "Planning…";
-      } else if (phase === "running") {
-        subtitleEl.textContent = stepCount ? `Running ${stepCount} steps…` : "Running…";
+      const { phase } = payload;
+      if (phase === "running") {
+        subtitleEl.textContent = "Running…";
+      } else if (phase === "awaiting_password") {
+        subtitleEl.textContent = "🔒 Waiting for your password…";
       } else if (phase === "completed") {
         subtitleEl.textContent = "Cancelled ✓";
         setTerminalState();
@@ -115,9 +123,9 @@ chrome.runtime.onMessage.addListener((message) => {
       break;
     }
 
-    case "mcp_unavailable":
-      mcpSetup.classList.remove("hidden");
-      subtitleEl.textContent = "MCP server unavailable";
+    case "aion_unavailable":
+      aionSetup?.classList.remove("hidden");
+      subtitleEl.textContent = "Aion unavailable";
       setTerminalState();
       break;
 
@@ -152,12 +160,5 @@ btnStop.addEventListener("click", () => {
 
 btnClose.addEventListener("click", () => window.close());
 
-document.getElementById("btn-copy-cmd")?.addEventListener("click", () => {
-  navigator.clipboard.writeText("npx @playwright/mcp@latest --port 3333 --extension");
-  const btn = document.getElementById("btn-copy-cmd");
-  const orig = btn.textContent;
-  btn.textContent = "Copied!";
-  setTimeout(() => { btn.textContent = orig; }, 2000);
-});
 
 init();

@@ -18,12 +18,52 @@ function isContextValid() {
   }
 }
 
+// After the extension is reloaded, the content scripts on already-open tabs are orphaned
+// (their chrome.* link is gone). That's expected and does NOT affect the cancellation agent
+// (which injects fresh scripts via chrome.scripting). Warn ONCE, quietly, to avoid console spam.
+let _ctxWarned = false;
+function warnContextOnce() {
+  if (_ctxWarned) return;
+  _ctxWarned = true;
+  console.debug("[TrialGuard Bridge] Extension reloaded — this tab's content script is stale. Refresh the page to re-activate detection. (Cancellation via the popup still works.)");
+}
+
+// ── DEBUG HOOKS (for Playwright-driven testing of the cancellation agent) ──
+// Trigger a cancellation from the page; background fills tabId from sender.tab.id.
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TG_TRIGGER_CANCEL") return;
+  if (!isContextValid()) { console.log("[TG-SP] error context-invalid"); return; }
+  console.log("[TG-SP] trigger", JSON.stringify(e.data.trial));
+  chrome.runtime.sendMessage({ action: "requestCancellation", trial: e.data.trial });
+});
+// Reload the extension from disk (so code fixes take effect).
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TG_RELOAD") return;
+  if (!isContextValid()) return;
+  chrome.runtime.sendMessage({ action: "tgReload" });
+});
+// Read the agent's progress trace from storage (the SW mirrors spUpdate there).
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TG_READ_TRACE") return;
+  if (!isContextValid()) return;
+  chrome.storage.local.get("tgTrace", (d) => {
+    console.log("[TG-TRACE]", JSON.stringify(d.tgTrace || []));
+  });
+});
+// Clear the trace before a fresh run.
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TG_CLEAR_TRACE") return;
+  if (!isContextValid()) return;
+  chrome.storage.local.set({ tgTrace: [] });
+});
+// ── END DEBUG HOOKS ──
+
 window.addEventListener("message", (e) => {
   if (e.source !== window) return;
   if (!e.data || e.data.type !== "TRIALGUARD_DETECTED") return;
 
   if (!isContextValid()) {
-    console.warn("[TrialGuard Bridge] Extension context invalidated — refresh the page to re-activate TrialGuard");
+    warnContextOnce();
     return;
   }
 
