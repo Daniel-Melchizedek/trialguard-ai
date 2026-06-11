@@ -34,6 +34,14 @@ function getDayNumber(detectedAt) {
   return Math.max(1, Math.round((today - start) / (1000 * 60 * 60 * 24)) + 1);
 }
 
+// The extension stores websiteUrl as a bare hostname (e.g. "account.adobe.com").
+// Without a scheme, <a href> treats it as a relative URL and mail clients render
+// it as plain text. Ensure an absolute https:// URL so the CTA is a real link.
+function normalizeUrl(url) {
+  if (!url || url === "#") return "#";
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 function escapeHtml(str) {
   return str
     .replace(/&/g, "&amp;")
@@ -45,7 +53,7 @@ function escapeHtml(str) {
 async function sendReminderEmail(trial, tip) {
   const client = getEmailClient();
   const endDate = formatDate(trial.trialEndDate);
-  const cancelUrl = trial.websiteUrl || "#";
+  const cancelUrl = normalizeUrl(trial.websiteUrl);
   const daysLeft = getDaysLeft(trial.trialEndDate);
   const dayNumber = getDayNumber(trial.detectedAt);
 
@@ -95,7 +103,7 @@ async function sendReminderEmail(trial, tip) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>🛡️ TrialGuard</h1>
+      <h1>🛡️ Trial Guard</h1>
       <p>Your AI-powered trial watchdog</p>
     </div>
     <div class="body">
@@ -106,18 +114,18 @@ async function sendReminderEmail(trial, tip) {
       <a href="${cancelUrl}" class="cta">Manage Subscription →</a>
       <div class="ignore">
         <strong>Want to cancel?</strong> Visit the link above before your trial ends to avoid charges.<br />
-        This daily reminder is sent by TrialGuard. Manage reminders in the TrialGuard browser extension.
+        This daily reminder is sent by Trial Guard. Manage reminders in the Trial Guard browser extension.
       </div>
     </div>
     <div class="footer">
-      Sent by TrialGuard · Powered by Azure OpenAI
+      Sent by Trial Guard · Powered by Azure OpenAI
     </div>
   </div>
 </body>
 </html>`;
 
   const plainText = [
-    `TrialGuard Daily Update — ${trial.productName}`,
+    `Trial Guard Daily Update — ${trial.productName}`,
     "",
     tip ? `Today's tip: ${tip}` : "",
     "",
@@ -126,7 +134,7 @@ async function sendReminderEmail(trial, tip) {
     `Manage your subscription: ${cancelUrl}`,
     "",
     "---",
-    "Sent by TrialGuard."
+    "Sent by Trial Guard."
   ].filter(line => line !== undefined).join("\n");
 
   const message = {
