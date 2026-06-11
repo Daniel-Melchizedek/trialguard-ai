@@ -195,6 +195,29 @@ function isManagementPage() {
       || /password|signin|sign-in|log[-_]?in/.test(href);
 }
 
+// True when the page is still showing a trial SIGNUP / enrollment form the user
+// has NOT completed yet — i.e. name/email entry fields sitting next to a
+// "Start your free trial" / "Subscribe" call-to-action. This is the page that
+// INVITES you to start a trial, not a started trial. Detecting here is premature:
+// we must wait until the user submits and reaches a confirmation/active state.
+function looksLikeSignupForm() {
+  const startCta = /\b(start|begin|activate|try|get)\b[^.]{0,30}\b(free\s+)?(trial|free|access)\b|\bsubscribe\b|\bsign\s*up\b/i;
+  const forms = document.querySelectorAll("form");
+  const scopes = forms.length ? Array.from(forms) : [document.body];
+  return scopes.some(scope => {
+    // An entry field the user fills in to enroll (name / email / generic text).
+    const hasEntryField = scope.querySelector(
+      'input[type=email],input[type=text],input[name*=email i],input[name*=name i],' +
+      'input[autocomplete=email],input[autocomplete=given-name],input[autocomplete=family-name]'
+    );
+    if (!hasEntryField) return false;
+    const ctaText = (scope.innerText || "") + " " +
+      Array.from(scope.querySelectorAll("button,[type=submit],input[type=submit],a[role=button]"))
+        .map(b => b.innerText || b.value || "").join(" ");
+    return startCta.test(ctaText);
+  });
+}
+
 async function checkPage() {
   if (trialSent)      return;   // already confirmed a trial on this page — stop forever
   if (alreadyChecked) return;
@@ -222,6 +245,15 @@ async function checkPage() {
   // This prevents false positives on landing/marketing/pricing pages
   if (signalCount === 0) {
     console.log("[TrialGuard] No enrollment signals — looks like a landing page, skipping AI");
+    return;
+  }
+
+  // Guard: a trial SIGNUP form is still on screen and there is no confirmation
+  // text yet. This is the "Start Your Free Trial" enrollment page (name/email +
+  // a start button) — the trial has NOT been activated. Wait for the user to
+  // submit and reach a confirmation/active state before detecting.
+  if (looksLikeSignupForm() && !signals.hasConfirmText) {
+    console.log("[TrialGuard] Trial signup form still present and no confirmation text — not enrolled yet, skipping");
     return;
   }
 
@@ -269,9 +301,16 @@ document.addEventListener("submit", (e) => {
 // schedule a re-check. The MutationObserver (formSubmitDetected path) will also
 // fire on DOM changes that follow, so this acts as a belt-and-suspenders fallback.
 let clickDebounceTimer = null;
-document.addEventListener("click", () => {
+document.addEventListener("click", (e) => {
   if (trialSent) return;
   if (!hasTrialKeywords(document.body?.innerText || "")) return;
+  // Only a real start/subscribe/confirm control counts as an enrollment action.
+  // Clicking into the email field or elsewhere on the page must NOT be treated
+  // as "the user submitted the trial".
+  const el = e.target.closest?.("button,[type=submit],input[type=submit],a,[role=button]");
+  if (!el) return;
+  const label = (el.innerText || el.value || el.getAttribute?.("aria-label") || "").toLowerCase();
+  if (!/\b(start|begin|activate|subscribe|continue|confirm)\b|sign\s*up|try .*free/.test(label)) return;
   formSubmitDetected = true;
   clearTimeout(clickDebounceTimer);
   clickDebounceTimer = setTimeout(() => { alreadyChecked = false; checkPage(); }, 2500);
