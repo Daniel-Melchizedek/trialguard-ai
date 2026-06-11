@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aion LanguageModel API Test</title>
+<style>
+  body { font-family: monospace; background: #0f172a; color: #e2e8f0; padding: 20px; }
+  h1 { color: #93c5fd; }
+  button { background: #1d4ed8; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 6px 4px; }
+  button:hover { background: #1e40af; }
+  #output { background: #1e293b; border-radius: 8px; padding: 16px; margin-top: 16px; white-space: pre-wrap; word-break: break-all; min-height: 80px; }
+  .ok   { color: #86efac; }
+  .err  { color: #f87171; }
+  .info { color: #fbbf24; }
+  .raw  { color: #94a3b8; font-size: 12px; border-top: 1px solid #334155; margin-top: 10px; padding-top: 10px; }
+  select { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 8px; border-radius: 6px; margin: 4px; }
+</style>
+</head>
+<body>
+<h1>Aion LanguageModel API — Diagnostic Test</h1>
+
+<div>
+  <select id="testSelect">
+    <option value="json_simple">Test 1: Simple JSON (short prompt)</option>
+    <option value="json_trialguard">Test 2: TrialGuard-style JSON prompt</option>
+    <option value="hello">Test 3: Plain hello (confirm model works)</option>
+    <option value="system_prompt">Test 4: With systemPrompt option</option>
+  </select>
+  <button onclick="runTest()">Run Test</button>
+  <button onclick="checkAvailability()">Check Availability</button>
+  <button onclick="clearOutput()">Clear</button>
+</div>
+
+<div id="output">Click a button above to begin…</div>
+
+<script>
+const out = document.getElementById("output");
+
+function log(msg, cls) {
+  const span = document.createElement("span");
+  span.className = cls || "";
+  span.textContent = msg + "\n";
+  out.appendChild(span);
+}
+
+function clearOutput() { out.innerHTML = ""; }
+
+async function checkAvailability() {
+  clearOutput();
+  log("Checking LanguageModel API…", "info");
+  if (typeof LanguageModel === "undefined") {
+    log("✗ LanguageModel is UNDEFINED — Edge Canary with Prompt API flag not active.", "err");
+    log("  Enable at: edge://flags/#prompt-api-for-gemini-nano", "info");
+    return;
+  }
+  log("✓ LanguageModel object found", "ok");
+  try {
+    const caps = await LanguageModel.availability?.() ?? await LanguageModel.capabilities?.();
+    log("availability/capabilities: " + JSON.stringify(caps), "ok");
+  } catch (e) {
+    log("availability() threw: " + e.message, "err");
+  }
+  try {
+    log("Creating session (no options)…", "info");
+    const s = await LanguageModel.create();
+    log("✓ Session created: " + JSON.stringify(Object.keys(s || {})), "ok");
+    s.destroy?.();
+  } catch (e) {
+    log("✗ LanguageModel.create() threw: " + e.message, "err");
+  }
+}
+
+const PROMPTS = {
+  hello: `Say hello.`,
+
+  json_simple: `Reply with ONLY this JSON and nothing else:
+{"action":"click","selector":"[data-tg-i=3]","description":"test","confidence":90,"reason":"test"}`,
+
+  json_trialguard: `Goal: cancel the "NeuroRevive" free trial. User email: test@example.com.
+Page: Account Settings — https://example.com/account
+
+Recent actions:
+  (none yet)
+
+Clickable elements (use these selectors exactly):
+1. [a] "Profile" | selector: [data-tg-i=0]
+2. [a] "Billing" | selector: [data-tg-i=1]
+3. [button] "Cancel Subscription" | selector: [data-tg-i=2]
+4. [a] "Help" | selector: [data-tg-i=3]
+
+Pick the ONE best action toward cancellation:
+- If page shows cancellation confirmed → action "done"
+- If a [PROFILE]/account button is visible and not yet clicked → click it
+- If a billing, subscription, or manage-plan link is visible → click it
+- If a cancel or end-trial button is visible → click it
+- If stuck → action "need_user"
+
+Never invent a selector. Only use selectors from the list above.
+
+Reply with ONLY this JSON (no markdown, no explanation):
+{"action":"click","selector":"[data-tg-i=5]","description":"...","confidence":85,"reason":"..."}`,
+
+  system_prompt: `Reply with ONLY valid JSON: {"action":"click","selector":"[data-tg-i=3]","description":"test","confidence":90,"reason":"test"}`
+};
+
+async function runTest() {
+  clearOutput();
+  const testKey = document.getElementById("testSelect").value;
+
+  if (typeof LanguageModel === "undefined") {
+    log("✗ LanguageModel is UNDEFINED. Open this page in Edge Canary with Prompt API enabled.", "err");
+    return;
+  }
+
+  const promptText = PROMPTS[testKey];
+  log("=== Test: " + testKey + " ===\n", "info");
+  log("Prompt sent:\n" + promptText + "\n", "info");
+
+  const useSystemPrompt = testKey === "system_prompt";
+  let session;
+  try {
+    log("Creating LanguageModel session…", "info");
+    const t0 = Date.now();
+    if (useSystemPrompt) {
+      try {
+        session = await LanguageModel.create({
+          systemPrompt: "You always respond with valid JSON only. Never add explanation text or markdown."
+        });
+        log("✓ Session created with systemPrompt (" + (Date.now()-t0) + "ms)", "ok");
+      } catch (e) {
+        log("systemPrompt option failed: " + e.message + " — retrying without options", "err");
+        session = await LanguageModel.create();
+        log("✓ Session created without options (" + (Date.now()-t0) + "ms)", "ok");
+      }
+    } else {
+      session = await LanguageModel.create();
+      log("✓ Session created (" + (Date.now()-t0) + "ms)", "ok");
+    }
+  } catch (e) {
+    log("✗ LanguageModel.create() failed: " + e.message, "err");
+    return;
+  }
+
+  try {
+    log("Calling session.prompt()…", "info");
+    const t1 = Date.now();
+    const raw = await session.prompt(promptText);
+    const elapsed = Date.now() - t1;
+    log("✓ Response received in " + elapsed + "ms", "ok");
+    log("\n─── RAW RESPONSE ─────────────────────────", "info");
+    log(String(raw || "(empty)"), "");
+
+    // Attempt to parse JSON
+    log("\n─── JSON PARSE ATTEMPT ───────────────────", "info");
+    let cleaned = String(raw || "").replace(/```(?:json)?\s*([\s\S]*?)```/i, "$1").trim();
+    const start = cleaned.indexOf("{");
+    if (start === -1) {
+      log("✗ No '{' found in response — model did not output JSON", "err");
+    } else {
+      const sub = cleaned.slice(start);
+      let end = sub.lastIndexOf("}");
+      let parsed = null;
+      while (end >= 0) {
+        try { parsed = JSON.parse(sub.slice(0, end + 1)); break; } catch { end = sub.lastIndexOf("}", end - 1); }
+      }
+      if (parsed) {
+        log("✓ Parsed JSON: " + JSON.stringify(parsed, null, 2), "ok");
+      } else {
+        log("✗ Found '{' but JSON.parse failed for all end positions", "err");
+        log("  Extracted substring: " + sub.slice(0, 300), "raw");
+      }
+    }
+  } catch (e) {
+    log("✗ session.prompt() threw: " + e.message, "err");
+  } finally {
+    session?.destroy?.();
+  }
+}
+</script>
+</body>
+</html>
