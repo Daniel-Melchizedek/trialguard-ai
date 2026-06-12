@@ -619,7 +619,9 @@ async function callAionDecision(tabId, trial, observation, stepsTaken, avoid = n
     func: async (promptText) => {
       try {
         if (typeof LanguageModel === "undefined") return { error: "LanguageModel API not available." };
-        const session = await LanguageModel.create();
+        // expectedOutputs sets the output language (English) — silences Edge's "No output
+        // language was specified" advisory. Inlined: this runs in the page's MAIN world.
+        const session = await LanguageModel.create({ expectedOutputs: [{ type: "text", languages: ["en"] }] });
         let raw;
         try { raw = await session.prompt(promptText); } finally { session.destroy?.(); }
         const rawStr = String(raw || "");
@@ -706,7 +708,7 @@ async function confirmCancelled(tabId, observation, signal = null) {
         target: { tabId }, world: "MAIN",
         func: async (text) => {
           if (typeof LanguageModel === "undefined") return "no";
-          const s = await LanguageModel.create();
+          const s = await LanguageModel.create({ expectedOutputs: [{ type: "text", languages: ["en"] }] });
           let raw; try { raw = await s.prompt(`Page text:\n${text}\n\nDoes this page CONFIRM that the subscription or free trial has now been CANCELLED (the cancellation is complete/successful)? Answer with only "yes" or "no".`); } finally { s.destroy?.(); }
           return String(raw || "").toLowerCase();
         },

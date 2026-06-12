@@ -1,6 +1,11 @@
 // Runs on every page at document_idle.
 // Uses Aion 1.0 Instruct (Edge Prompt API) — 100% on-device, no data sent to cloud.
 
+// Output language for the Edge Prompt API. Specifying it silences the "No output
+// language was specified" advisory and attests output safety. Output is English;
+// we intentionally do NOT constrain input language (pages may be non-English).
+const AION_OUTPUT = [{ type: "text", languages: ["en"] }];
+
 const TRIAL_KEYWORDS = [
   "free trial", "start your trial", "start trial", "begin trial",
   "days free", "cancel anytime", "no credit card required",
@@ -90,7 +95,7 @@ async function detectTrialWithAion(pageText, signals) {
     return null;
   }
 
-  const availability = await LanguageModel.availability();
+  const availability = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT });
   console.log("[TrialGuard] Aion 1.0 model availability:", availability);
 
   if (availability === "unavailable") {
@@ -111,7 +116,7 @@ async function detectTrialWithAion(pageText, signals) {
 
   console.log("[TrialGuard] Aion 1.0 Instruct: creating session...");
   const today = new Date().toISOString().slice(0, 10);
-  const session = await LanguageModel.create({ temperature: 0.2, topK: 10 });
+  const session = await LanguageModel.create({ temperature: 0.2, topK: 10, expectedOutputs: AION_OUTPUT });
 
   // Detect ONLY a time-limited free TRIAL the user is currently on — NOT a free plan/tier.
   const prompt = `You are a free TRIAL enrollment detector. Today is ${today}.

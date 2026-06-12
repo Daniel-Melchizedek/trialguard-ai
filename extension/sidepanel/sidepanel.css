@@ -24,6 +24,17 @@ body {
 .title { font-size: 15px; font-weight: 700; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
 
+.sp-timer {
+  margin-left: auto;           /* push to the right edge of the header */
+  flex-shrink: 0;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-variant-numeric: tabular-nums;  /* no digit jitter while ticking */
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;              /* muted when stopped/frozen */
+}
+.sp-timer.running { color: #93c5fd; }  /* blue while actively counting */
+
 .log {
   flex: 1;
   overflow-y: auto;

@@ -1,3 +1,7 @@
+// Output language for the Edge Prompt API — silences the "No output language
+// was specified" advisory. Must match the options used elsewhere (en).
+const AION_OUTPUT = [{ type: "text", languages: ["en"] }];
+
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const end = new Date(dateStr);
@@ -66,7 +70,19 @@ function renderTrial(trial) {
     btn.className = "btn-cancel";
     btn.textContent = (status === "failed" || status === "stopped") ? "Retry Cancellation" : "Cancel Trial";
     btn.addEventListener("click", async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      // Open the trial's captured link in a NEW tab first, then run the cancellation
+      // there. websiteUrl is stored as a bare hostname, so add a scheme; prefer the exact
+      // detected page (pageUrl) when available. Fall back to the active tab if no link.
+      const captured = trial.pageUrl || trial.websiteUrl || "";
+      const url = captured
+        ? (/^https?:\/\//i.test(captured) ? captured : `https://${captured}`)
+        : null;
+      let tab;
+      if (url) {
+        tab = await chrome.tabs.create({ url, active: true });
+      } else {
+        [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      }
       await chrome.storage.session.set({ activeCancellation: { trial, tabId: tab.id } });
       await chrome.sidePanel.open({ windowId: tab.windowId });
       // Side panel triggers requestCancellation itself once its onMessage listener is registered.
@@ -116,7 +132,7 @@ async function checkAionStatus() {
   // Ask the model directly (the popup is an extension page, so LanguageModel is available
   // and authoritative — more reliable than the cached aionReady flag).
   let av;
-  try { av = await LanguageModel.availability(); } catch { av = "unknown"; }
+  try { av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT }); } catch { av = "unknown"; }
 
   if (av === "available") {
     // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.

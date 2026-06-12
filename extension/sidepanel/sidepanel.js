@@ -4,9 +4,32 @@ let lastStepEl = null;
 const logEl     = document.getElementById("sp-log");
 const titleEl   = document.getElementById("sp-title");
 const subtitleEl = document.getElementById("sp-subtitle");
+const timerEl   = document.getElementById("sp-timer");
 const btnStop   = document.getElementById("btn-stop");
 const btnClose  = document.getElementById("btn-close");
 const aionSetup = document.getElementById("sp-aion-setup");
+
+// ─── Header elapsed-time timer ────────────────────────────────────────────────
+let timerInterval = null, timerStart = 0;
+function fmtElapsed(ms) {
+  const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60);
+  const ss = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m % 60).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+}
+function startTimer() {
+  if (timerInterval) return;
+  timerStart = Date.now();
+  timerEl.textContent = "0:00";
+  timerEl.classList.remove("hidden");
+  timerEl.classList.add("running");
+  timerInterval = setInterval(() => {
+    timerEl.textContent = fmtElapsed(Date.now() - timerStart);
+  }, 1000);
+}
+function stopTimer() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerEl.classList.remove("running");   // freeze at final value, switch to muted colour
+}
 
 function appendToast(type, message) {
   const entry = document.createElement("div");
@@ -50,6 +73,7 @@ function markStepError(el) {
 }
 
 function setTerminalState() {
+  stopTimer();   // freeze the header timer on any terminal outcome (done/stopped/failed/no-plan/aion-unavailable)
   btnStop.classList.add("hidden");
   btnClose.classList.remove("hidden");
 }
@@ -74,6 +98,9 @@ async function init() {
   titleEl.textContent = `Cancelling ${active.trial.productName}`;
   subtitleEl.textContent = "Starting…";
   btnStop.classList.remove("hidden");
+  startTimer();   // begin the header elapsed-time timer
+
+
 
   // Listener is now registered — safe to ask background to start the agent.
   chrome.runtime.sendMessage({

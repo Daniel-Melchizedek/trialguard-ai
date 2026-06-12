@@ -121,6 +121,7 @@ window.addEventListener("message", (e) => {
       id:               crypto.randomUUID(),
       productName:      trial.productName,
       websiteUrl:       trial.websiteUrl || trial.pageUrl || "",
+      pageUrl:          trial.pageUrl || "",   // exact detected page — used to open the cancellation tab
       trialDurationDays: trial.trialDurationDays || null,
       trialEndDate,
       pageTitle:        trial.pageTitle || "",
@@ -134,16 +135,15 @@ window.addEventListener("message", (e) => {
     console.warn("[TrialGuard Bridge] Storage write failed:", err.message);
   }
 
-  // Also forward to background for Azure backend save (best-effort)
+  // Also forward to background for the Azure backend save (best-effort). Fire-and-forget:
+  // we don't use the response, and keeping the channel open for one logs a benign
+  // "message channel closed" warning when this page navigates/closes (or the SW recycles)
+  // before the backend fetch resolves. The background still completes the save — its
+  // listener returns true, keeping the worker alive for the fetch — and the storage.sync
+  // save above is the source of truth.
   try {
-    chrome.runtime.sendMessage({ action: "trialDetected", data: trial }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.warn("[TrialGuard Bridge] Background message failed:", chrome.runtime.lastError.message);
-      } else {
-        console.log("[TrialGuard Bridge] Background acknowledged:", response);
-      }
-    });
-  } catch (err) {
-    console.warn("[TrialGuard Bridge] sendMessage failed:", err.message);
+    chrome.runtime.sendMessage({ action: "trialDetected", data: trial }).catch(() => {});
+  } catch (_) {
+    // Extension context invalidated (e.g. reloaded) — ignore.
   }
 });

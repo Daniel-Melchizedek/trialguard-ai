@@ -1,3 +1,7 @@
+// Output language for the Edge Prompt API — silences the "No output language
+// was specified" advisory. Output is English; input language is left unconstrained.
+const AION_OUTPUT = [{ type: "text", languages: ["en"] }];
+
 const statusEl = document.getElementById("status");
 const btnEl    = document.getElementById("btn");
 const pw       = document.getElementById("pw");
@@ -25,7 +29,7 @@ async function runDiagnostics() {
   // 3. Availability
   let av;
   try {
-    av = await LanguageModel.availability();
+    av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT });
   } catch(e) {
     av = "unknown";
   }
@@ -40,7 +44,7 @@ async function runDiagnostics() {
   // 5. If available, ask the model its identity
   if (av === "available") {
     try {
-      const session = await LanguageModel.create();
+      const session = await LanguageModel.create({ expectedOutputs: AION_OUTPUT });
       const identity = await session.prompt("What is your name and version? Reply in one sentence.");
       out.push(`Model self-report: "${identity.trim()}"`);
       session.destroy();
@@ -65,7 +69,7 @@ async function init() {
 
   let av;
   try {
-    av = await LanguageModel.availability();
+    av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT });
   } catch(e) {
     av = "unknown";
   }
@@ -90,7 +94,7 @@ btnEl.addEventListener("click", async () => {
 
   pollInterval = setInterval(async () => {
     let av;
-    try { av = await LanguageModel.availability(); } catch(e) { av = "unknown"; }
+    try { av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT }); } catch(e) { av = "unknown"; }
     const st = document.getElementById("st");
     if (st) st.textContent = `Status: ${av} — waiting…`;
     console.log("[TrialGuard] polled availability:", av);
@@ -99,6 +103,7 @@ btnEl.addEventListener("click", async () => {
 
   try {
     const session = await LanguageModel.create({
+      expectedOutputs: AION_OUTPUT,
       monitor(m) {
         m.addEventListener("downloadprogress", e => {
           clearInterval(pollInterval);
