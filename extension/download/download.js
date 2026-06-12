@@ -141,7 +141,10 @@ function showReady(diag) {
   btnEl.textContent = "✓ Close";
   btnEl.disabled = false;
   btnEl.onclick = () => window.close();
-  chrome.storage.sync.set({ aionReady: true });
+  // Model availability is device-specific — store readiness in local (not sync),
+  // matching what popup.js and content.js read. Clear the "needs download" flag so
+  // the popup banner disappears and content scripts re-run detection.
+  chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
   setTimeout(() => window.close(), 5000);
 }
 

@@ -112,14 +112,42 @@ async function checkAionStatus() {
     statusEl.classList.remove("hidden");
     return;
   }
-  const { aionReady } = await chrome.storage.local.get(["aionReady"]);
-  if (aionReady) {
+
+  // Ask the model directly (the popup is an extension page, so LanguageModel is available
+  // and authoritative — more reliable than the cached aionReady flag).
+  let av;
+  try { av = await LanguageModel.availability(); } catch { av = "unknown"; }
+
+  if (av === "available") {
+    // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.
+    chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
     statusEl.className = "ai-status ready";
     statusEl.textContent = "✓ Aion 1.0 ready";
     statusEl.classList.remove("hidden");
     setTimeout(() => statusEl.classList.add("hidden"), 2000);
+    return;
   }
-  // Not ready yet — agent initialises on demand when Cancel Trial is clicked
+
+  if (av === "unavailable") {
+    statusEl.className = "ai-status error";
+    statusEl.textContent = "⚠️ Aion 1.0 model unavailable on this device.";
+    statusEl.classList.remove("hidden");
+    return;
+  }
+
+  // downloadable / downloading / unknown — the model isn't ready. Offer a one-click
+  // entry point to the download page (which provides the user gesture create() needs).
+  statusEl.className = "ai-status downloading";
+  statusEl.textContent = "On-device AI model isn't downloaded yet. It powers trial detection and cancellation.";
+  const btn = document.createElement("button");
+  btn.className = "ai-init-btn";
+  btn.textContent = "⬇️ Download AI model";
+  btn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("download/download.html") });
+    window.close();
+  });
+  statusEl.appendChild(btn);
+  statusEl.classList.remove("hidden");
 }
 
 setTimeout(checkAionStatus, 0);

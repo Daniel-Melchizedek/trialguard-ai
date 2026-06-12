@@ -1,25 +1,5 @@
-const { AzureOpenAI } = require("openai");
-const { DefaultAzureCredential, getBearerTokenProvider } = require("@azure/identity");
 const { fetchProductContext } = require("./webRetriever");
-
-let _client = null;
-
-function getClient() {
-  if (!_client) {
-    const credential = new DefaultAzureCredential();
-    const azureADTokenProvider = getBearerTokenProvider(
-      credential,
-      "https://cognitiveservices.azure.com/.default"
-    );
-    _client = new AzureOpenAI({
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-      azureADTokenProvider,
-      deployment: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini",
-      apiVersion: "2024-10-21",
-    });
-  }
-  return _client;
-}
+const { generateTipWithAgent } = require("./agentClient");
 
 function computeDaysLeft(trialEndDate) {
   if (!trialEndDate) return null;
@@ -40,33 +20,14 @@ function computeDayNumber(detectedAt) {
 }
 
 async function generateTrialTip(trial) {
+  // Retrieve up-to-date product context (unchanged), then generate the tip via the
+  // Azure AI Foundry agent instead of calling the model directly. Behaviour is the
+  // same: same persona/constraints (agent instructions), same context, same sampling.
   const context = await fetchProductContext(trial.websiteUrl, trial.productName);
-  const daysLeft = computeDaysLeft(trial.trialEndDate);
-
-  const systemMsg = context
-    ? `You are a concise software advisor. Use the following up-to-date product information to give a specific tip:\n\n${context}`
-    : `You are a concise software advisor with broad knowledge of popular software products.`;
-
-  const daysText = daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? "" : "s"}` : "some time";
-  const userMsg =
-    `I have ${daysText} left on my free trial of "${trial.productName}". ` +
-    `Give me exactly ONE specific, actionable tip to get maximum value from it today. ` +
-    `1-2 sentences only. Plain English. No markdown, no bullet points. ` +
-    `Do not mention cancellation, billing, or pricing.`;
-
-  const response = await getClient().chat.completions.create({
-    model: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o-mini",
-    messages: [
-      { role: "system", content: systemMsg },
-      { role: "user", content: userMsg },
-    ],
-    max_tokens: 120,
-    temperature: 0.9,
-    top_p: 0.95,
-  });
+  const tip = await generateTipWithAgent(trial, context);
 
   return (
-    response.choices?.[0]?.message?.content?.trim() ||
+    (tip && tip.trim()) ||
     `Explore the key features of ${trial.productName} today to make the most of your remaining trial time.`
   );
 }

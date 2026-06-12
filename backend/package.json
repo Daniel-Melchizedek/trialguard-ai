@@ -12,8 +12,7 @@
     "@azure/cosmos": "^4.1.1",
     "@azure/communication-email": "^1.0.0",
     "@azure/identity": "^4.4.1",
-    "openai": "^4.96.0",
-    "@azure/ai-agents": "^1.0.0",
+    "@azure/ai-projects": "^2.0.0",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {

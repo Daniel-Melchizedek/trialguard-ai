@@ -3,11 +3,20 @@ const cheerio = require("cheerio");
 const MIN_USEFUL_LENGTH = 100;
 const MAX_CONTEXT_LENGTH = 1500;
 
+// The extension stores websiteUrl as a bare hostname (e.g. "app.azurewebsites.net").
+// Without a scheme, fetch() throws, so we'd never retrieve the real page content —
+// leaving the tip agent with no grounding. Ensure an absolute https:// URL.
+function toAbsoluteUrl(url) {
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 async function fetchProductContext(websiteUrl, productName) {
   // Step 1: direct fetch of the trial's website URL
-  if (websiteUrl) {
+  const target = toAbsoluteUrl(websiteUrl);
+  if (target) {
     try {
-      const res = await fetch(websiteUrl, {
+      const res = await fetch(target, {
         signal: AbortSignal.timeout(5000),
         headers: { "User-Agent": "Mozilla/5.0 (compatible; TrialGuard/1.0)" }
       });

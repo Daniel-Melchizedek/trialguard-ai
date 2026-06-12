@@ -58,6 +58,27 @@ window.addEventListener("message", (e) => {
 });
 // ── END DEBUG HOOKS ──
 
+// ── Aion model readiness bridge (content.js is MAIN world → no chrome.* access) ──
+// content.js tells us when the on-device model isn't downloaded yet; record it so the
+// popup can surface a "Download AI model" button.
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TRIALGUARD_AION_STATUS") return;
+  if (!isContextValid()) return;
+  if (e.data.available === false) {
+    try { chrome.storage.local.set({ aionNeedsDownload: true }); } catch (_) {}
+  }
+});
+
+// When the model finishes downloading (download.js sets aionReady in local), tell the
+// MAIN-world content script to re-run detection on this already-open page.
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.aionReady && changes.aionReady.newValue) {
+      window.postMessage({ type: "TRIALGUARD_AION_READY" }, "*");
+    }
+  });
+} catch (_) { /* context may be invalid on an orphaned content script */ }
+
 window.addEventListener("message", (e) => {
   if (e.source !== window) return;
   if (!e.data || e.data.type !== "TRIALGUARD_DETECTED") return;

@@ -4,7 +4,7 @@
 // (these are expected during autonomous navigation and shouldn't surface as uncaught errors).
 self.addEventListener("unhandledrejection", (event) => {
   const msg = String(event.reason?.message || event.reason || "");
-  if (/No tab with id|Frame with ID|showing error page|No frame with id|cannot be scripted|message channel closed|Receiving end does not exist/i.test(msg)) {
+  if (/No tab with id|Frame with ID|showing error page|No frame with id|cannot be scripted|Cannot access|chrome:\/\/|edge:\/\/|message channel closed|Receiving end does not exist/i.test(msg)) {
     event.preventDefault();
   }
 });
@@ -106,6 +106,25 @@ async function updateLocalTrial(trialId, fields) {
 }
 
 // ─── Cancellation — page observation ─────────────────────────────────────────
+
+// URLs that chrome.scripting.executeScript cannot inject into.
+const RESTRICTED_URL_RE = /^(chrome|edge|about|devtools|view-source|chrome-error|chrome-extension|moz-extension|data):|^https?:\/\/(chrome\.google\.com\/webstore|microsoftedge\.microsoft\.com\/addons)/i;
+
+// Is this tab safe to script right now? Returns { ok, gone, restricted, url }.
+// Used to guard every observe/act so we never spin on a closed or restricted tab.
+async function tabScriptability(tabId) {
+  let tab;
+  try {
+    tab = await chrome.tabs.get(tabId);
+  } catch {
+    return { ok: false, gone: true };
+  }
+  const url = tab.url || tab.pendingUrl || "";
+  if (!/^https?:\/\//i.test(url) || RESTRICTED_URL_RE.test(url)) {
+    return { ok: false, restricted: true, url };
+  }
+  return { ok: true, url };
+}
 
 async function observePage(tabId) {
   try {
@@ -334,9 +353,18 @@ async function observePage(tabId) {
     merged.text = merged.text.slice(0, 6000);
     return merged;
   } catch (e) {
-    console.error("[TrialGuard] observePage failed:", e);
-    const errorPage = /error page|cannot be scripted|No tab|Frame with ID/i.test(e?.message || "");
-    return { url: "", title: "", text: "", a11y: "", elements: [], errorPage };
+    const msg = e?.message || "";
+    // Classify expected/transient failures so the loop can react instead of spinning:
+    //  - tabGone:    the working tab was closed mid-run  → stop the cancellation
+    //  - restricted: navigated to chrome://, edge://, etc → can't script; recover/stop
+    //  - errorPage:  a browser error page                → goBack/reload recovery
+    const tabGone    = /No tab with id|No tab|tab was closed/i.test(msg);
+    const restricted = /Cannot access|cannot be scripted|chrome:\/\/|edge:\/\//i.test(msg);
+    const errorPage  = /error page|Frame with ID/i.test(msg) || restricted;
+    // These are expected during autonomous navigation — log quietly, don't spam as errors.
+    if (tabGone || restricted || errorPage) console.debug("[TrialGuard] observePage skipped:", msg);
+    else console.error("[TrialGuard] observePage failed:", e);
+    return { url: "", title: "", text: "", a11y: "", elements: [], errorPage, tabGone, restricted };
   }
 }
 
@@ -930,6 +958,7 @@ async function runCancellationAgent(trial, tabId) {
     // The action awaiting effect evaluation (done at the top of the NEXT iteration, after
     // the page has fully loaded — so we never judge a half-loaded page).
     let pending = null; // { step, priorUrl, priorSig }
+    let restrictedTries = 0; // consecutive iterations the tab was on a non-scriptable page
 
     // No step cap — loop runs until done / error / user Stop (per user request).
     for (let i = 0; ; i++) {
@@ -941,16 +970,32 @@ async function runCancellationAgent(trial, tabId) {
         return;
       }
 
-      // Terminal: the working tab was closed — can't cancel on a dead tab, so stop.
-      try {
-        await chrome.tabs.get(tabId);
-      } catch {
+      // Guard: the working tab must exist AND be scriptable before we observe/act.
+      const scriptable = await tabScriptability(tabId);
+      if (scriptable.gone) {
+        // Terminal: the working tab was closed — can't cancel on a dead tab, so stop.
         spToast("error", "The browser tab was closed — cancellation halted.", trialId);
         await patch({ cancellationStatus: "failed", cancellationError: "Tab closed" });
         await updateLocalTrial(trialId, { cancellationStatus: "failed" });
         notifySP("phase", { phase: "failed", trialId });
         return;
       }
+      if (scriptable.restricted) {
+        // The tab navigated to a page we can't script (chrome://, edge://, settings, …).
+        // Try to go back a few times; if it stays restricted, halt instead of spinning.
+        if (++restrictedTries > 3) {
+          spToast("error", "The tab is on a page that can't be controlled (e.g. a browser/settings page) — cancellation halted.", trialId);
+          await patch({ cancellationStatus: "failed", cancellationError: "Restricted page" });
+          await updateLocalTrial(trialId, { cancellationStatus: "failed" });
+          notifySP("phase", { phase: "failed", trialId });
+          return;
+        }
+        spToast("info", "Page can't be controlled — trying to go back…", trialId);
+        try { await chrome.tabs.goBack(tabId); } catch {}
+        await sleepOrAbort(2000, ac.signal);
+        continue;
+      }
+      restrictedTries = 0;
 
       // Wait for the page to FULLY render before Aion reads it (right before the fetch),
       // using DOM-stability detection so we never analyse / act on half-rendered content.
@@ -966,6 +1011,9 @@ async function runCancellationAgent(trial, tabId) {
       // until elements appear or the user stops.
       let waitTries = 0;
       while (observation.elements.length === 0 && !ac.signal.aborted) {
+        // Tab closed or went to a restricted page mid-wait — stop spinning and let the
+        // top-of-loop guard halt (gone) or recover (restricted) on the next iteration.
+        if (observation.tabGone || observation.restricted) break;
         waitTries++;
         if (observation.errorPage) {
           // The tab landed on a browser error page — recover by going back, then reload.
@@ -982,6 +1030,8 @@ async function runCancellationAgent(trial, tabId) {
         observation = await observePage(tabId);
       }
       if (ac.signal.aborted) continue;
+      // Tab died / went restricted while waiting — re-run the loop so the top guard handles it.
+      if (observation.tabGone || observation.restricted) continue;
 
       const curSig = sig(observation);
       // Now that the page is loaded, evaluate the PREVIOUS action's effect.

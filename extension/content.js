@@ -98,7 +98,14 @@ async function detectTrialWithAion(pageText, signals) {
     return null;
   }
   if (availability !== "available") {
-    console.warn("[TrialGuard] Aion 1.0 model not yet downloaded — open the TrialGuard popup to initialize it, then revisit this page");
+    // The on-device model isn't downloaded yet. We can't trigger the download here:
+    // create() requires a user activation, and content scripts (MAIN world, no chrome.*)
+    // run without one. Signal bridge.js (ISOLATED world) to flag it so the popup can show a
+    // "Download AI model" button; detection re-runs automatically once the model is ready
+    // (bridge posts TRIALGUARD_AION_READY — see the listener below). Use debug, not warn, so
+    // this expected pre-download state doesn't spam the console on every page.
+    console.debug("[TrialGuard] Aion 1.0 model not downloaded yet (" + availability + ") — open the popup to download it");
+    window.postMessage({ type: "TRIALGUARD_AION_STATUS", available: false }, "*");
     return null;
   }
 
@@ -486,4 +493,16 @@ window.addEventListener("message", (e) => {
       debounceTimer = setTimeout(checkPage, 800);
     }
   } catch { /* ignore */ }
+});
+
+// ─── Aion model readiness ─────────────────────────────────────────────────────
+// We can't read chrome.storage from the MAIN world, so bridge.js (ISOLATED world)
+// watches for the on-device model becoming ready and posts TRIALGUARD_AION_READY.
+// Re-run detection on the already-open page so the user doesn't have to revisit
+// after downloading the model. checkPage() no-ops if a trial was already detected.
+window.addEventListener("message", (e) => {
+  if (e.source !== window || e.data?.type !== "TRIALGUARD_AION_READY") return;
+  console.debug("[TrialGuard] Aion model now ready — re-running detection");
+  alreadyChecked = false;
+  checkPage();
 });
