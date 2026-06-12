@@ -6,9 +6,26 @@ const logEl     = document.getElementById("sp-log");
 const titleEl   = document.getElementById("sp-title");
 const subtitleEl = document.getElementById("sp-subtitle");
 const timerEl   = document.getElementById("sp-timer");
+const btnVerbose = document.getElementById("sp-verbose");
 const btnStop   = document.getElementById("btn-stop");
 const btnClose  = document.getElementById("btn-close");
 const aionSetup = document.getElementById("sp-aion-setup");
+
+// ─── Verbose toggle (show/hide the prompts sent to Aion) ──────────────────────
+// Prompt toasts are always rendered but hidden via CSS (.toast-prompt). Toggling
+// the `verbose` class on <body> reveals/hides them — including for steps already
+// completed earlier in this panel session.
+function applyVerbose(on) {
+  document.body.classList.toggle("verbose", on);
+  btnVerbose.setAttribute("aria-pressed", String(on));
+}
+btnVerbose.addEventListener("click", () => {
+  const on = btnVerbose.getAttribute("aria-pressed") !== "true";
+  applyVerbose(on);
+  chrome.storage.local.set({ spVerbose: on });
+});
+// Restore the saved preference (defaults to OFF when unset → prompts hidden by default).
+chrome.storage.local.get("spVerbose", ({ spVerbose }) => applyVerbose(!!spVerbose));
 
 // ─── Header elapsed-time timer ────────────────────────────────────────────────
 let timerInterval = null, timerStart = 0;

@@ -24,8 +24,22 @@ body {
 .title { font-size: 15px; font-weight: 700; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
 
+.sp-verbose {
+  margin-left: auto;           /* push the verbose + timer group to the right edge */
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #334155;
+}
+.sp-verbose:hover { border-color: #475569; color: #94a3b8; }
+.sp-verbose[aria-pressed="true"] { background: #1e3a5f; color: #93c5fd; border-color: #1d4ed8; }
+
 .sp-timer {
-  margin-left: auto;           /* push to the right edge of the header */
   flex-shrink: 0;
   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
   font-variant-numeric: tabular-nums;  /* no digit jitter while ticking */
@@ -69,7 +83,8 @@ body {
 .toast.toast-confirm    { color: #86efac; }
 .toast.toast-reconsider { color: #fbbf24; }
 .toast.toast-password   { color: #fbbf24; background: #78350f22; border: 1px solid #78350f55; }
-.toast.toast-prompt     { color: #93c5fd; background: #0b1220; border: 1px solid #1e293b; }
+.toast.toast-prompt     { color: #93c5fd; background: #0b1220; border: 1px solid #1e293b; display: none; }
+body.verbose .toast.toast-prompt { display: flex; }   /* revealed only when the Verbose toggle is on */
 .toast.toast-prompt .toast-msg {
   white-space: pre-wrap;
   word-break: break-word;
