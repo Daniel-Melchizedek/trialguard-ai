@@ -1,5 +1,6 @@
 let currentTrialId = null;
 let lastStepEl = null;
+let lastSpinnerEl = null;   // most recent spinning toast (step or "analysing")
 
 const logEl     = document.getElementById("sp-log");
 const titleEl   = document.getElementById("sp-title");
@@ -37,6 +38,9 @@ function appendToast(type, message) {
 
   const iconEl = document.createElement("span");
   if (type === "step" || type === "planning") {
+    // Keep only one live spinner: the previous step/analysis is done now that the next
+    // one has started, so stop its spinner before starting this one.
+    freezeSpinner(lastSpinnerEl);
     iconEl.className = "toast-icon spinning";
   } else {
     const icons = { done: "✓", error: "✗", stopped: "■", info: "●",
@@ -53,7 +57,27 @@ function appendToast(type, message) {
   entry.appendChild(msgEl);
   logEl.appendChild(entry);
   logEl.scrollTop = logEl.scrollHeight;
+  if (type === "step" || type === "planning") lastSpinnerEl = entry;
   return entry;
+}
+
+// Stop a single spinning toast (e.g. the "Aion is analysing…" one) — only if it's still
+// spinning, so it never overrides a ✓/✗ already set by markStepDone/markStepError.
+function freezeSpinner(el) {
+  if (!el) return;
+  const icon = el.querySelector(".toast-icon");
+  if (icon && icon.classList.contains("spinning")) {
+    icon.classList.remove("spinning");
+    icon.textContent = "✓";
+  }
+}
+
+// Stop every remaining spinner (used on a terminal outcome).
+function stopAllSpinners() {
+  logEl.querySelectorAll(".toast-icon.spinning").forEach((icon) => {
+    icon.classList.remove("spinning");
+    icon.textContent = "●";
+  });
 }
 
 function markStepDone(el) {
@@ -73,7 +97,8 @@ function markStepError(el) {
 }
 
 function setTerminalState() {
-  stopTimer();   // freeze the header timer on any terminal outcome (done/stopped/failed/no-plan/aion-unavailable)
+  stopAllSpinners();   // stop any lingering "analysing…" / step spinner on a terminal outcome
+  stopTimer();         // freeze the header timer on any terminal outcome (done/stopped/failed/no-plan/aion-unavailable)
   btnStop.classList.add("hidden");
   btnClose.classList.remove("hidden");
 }
