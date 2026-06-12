@@ -129,14 +129,19 @@ async function checkAionStatus() {
     return;
   }
 
-  // Ask the model directly (the popup is an extension page, so LanguageModel is available
-  // and authoritative — more reliable than the cached aionReady flag).
+  // The persisted aionReady flag is the reliable "already downloaded" signal: right after a
+  // cold browser start, availability() can transiently report downloadable/downloading/unknown
+  // for a model that's actually on disk. So treat the model as downloaded if availability()
+  // confirms it now OR we recorded it ready in a prior session (set here or by the download page).
+  const { aionReady } = await chrome.storage.local.get("aionReady");
   let av;
   try { av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT }); } catch { av = "unknown"; }
 
-  if (av === "available") {
-    // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.
-    chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
+  if (av === "available" || aionReady) {
+    if (av === "available") {
+      // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.
+      chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
+    }
     statusEl.className = "ai-status ready";
     statusEl.textContent = "✓ Aion 1.0 ready";
     statusEl.classList.remove("hidden");
