@@ -22,7 +22,7 @@ body {
 .logo { font-size: 22px; }
 .header-text { min-width: 0; }
 .title { font-size: 15px; font-weight: 700; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
+.subtitle { font-size: 11px; color: #cbd5e1; margin-top: 1px; }
 
 .sp-verbose {
   margin-left: auto;           /* push the verbose + timer group to the right edge */
@@ -33,10 +33,10 @@ body {
   border-radius: 999px;
   cursor: pointer;
   background: transparent;
-  color: #64748b;
-  border: 1px solid #334155;
+  color: #94a3b8;
+  border: 1px solid #475569;
 }
-.sp-verbose:hover { border-color: #475569; color: #94a3b8; }
+.sp-verbose:hover { border-color: #64748b; color: #cbd5e1; }
 .sp-verbose[aria-pressed="true"] { background: #1e3a5f; color: #93c5fd; border-color: #1d4ed8; }
 
 .sp-timer {
@@ -45,7 +45,7 @@ body {
   font-variant-numeric: tabular-nums;  /* no digit jitter while ticking */
   font-size: 13px;
   font-weight: 600;
-  color: #64748b;              /* muted when stopped/frozen */
+  color: #94a3b8;              /* muted when stopped/frozen */
 }
 .sp-timer.running { color: #93c5fd; }  /* blue while actively counting */
 
@@ -193,7 +193,7 @@ body.verbose .toast.toast-prompt { display: flex; }   /* revealed only when the 
   flex: 1;
   padding: 9px;
   background: #1e293b;
-  color: #94a3b8;
+  color: #cbd5e1;
   border: 1px solid #334155;
   border-radius: 6px;
   font-size: 13px;
