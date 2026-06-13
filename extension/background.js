@@ -1083,7 +1083,7 @@ async function runCancellationAgent(trial, tabId) {
       // type it manually (we never auto-fill passwords), then resume once it's entered.
       const pw = await detectPasswordPrompt(tabId, observation);
       if (pw.present && !pw.filled) {
-        spToast("password", "🔒 A password is required to continue. Please type your password into the page — I'll resume automatically once it's entered.", trialId);
+        spToast("password", "A password is required to continue. Please type your password into the page — I'll resume automatically once it's entered.", trialId);
         notifySP("phase", { phase: "awaiting_password", trialId });
         await patch({ cancellationStatus: "needs_user", cancellationError: "Awaiting password entry" });
         let waited = 0;
