@@ -1,6 +1,6 @@
-# TrialGuard — AI‑powered free‑trial watchdog & autonomous canceller
+# Trial Guard — AI‑powered free‑trial watchdog & autonomous canceller
 
-> Never get charged by surprise. **TrialGuard** (shown in‑product as **"Trial Guard"**) detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with [**Aion‑1.0‑Instruct**](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) — **Microsoft's** on‑device small language model (SLM) on Windows — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
+> Never get charged by surprise. **Trial Guard** detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with [**Aion‑1.0‑Instruct**](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) — **Microsoft's** on‑device small language model (SLM) on Windows — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
 >
 > **Theme: Agentic Web** — an agent that watches your browsing, understands intent with on‑device AI, and takes real action on your behalf.
 
@@ -8,7 +8,7 @@
 
 ## 1. Project Description
 
-Free trials convert to paid charges when you forget to cancel. TrialGuard solves this end‑to‑end:
+Free trials convert to paid charges when you forget to cancel. Trial Guard solves this end‑to‑end:
 
 - **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your page content never leaves the device — only the small extracted metadata is sent to the backend.
 - **Remind** — An Azure Functions backend stores the trial and emails you reminders (a Day‑1 note on detection, then reminders as the end date nears), each with a countdown, a "Manage subscription" link, and a short **AI‑generated tip** for getting value from the product.
@@ -86,7 +86,7 @@ git clone https://github.com/Daniel-Melchizedek/trialguard-ai.git
 cd trialguard-ai
 ```
 
-**a) Extension** — Open `edge://extensions` → enable **Developer mode** → **Load unpacked** → select the `extension/` folder → open the TrialGuard popup → click **⬇️ Download AI model** (one‑time on‑device download) → set your email on the **Settings** page. *(The backend URL is preconfigured/committed by default — no need to set it.)*
+**a) Extension** — Open `edge://extensions` → enable **Developer mode** → **Load unpacked** → select the `extension/` folder → open the Trial Guard popup → click **⬇️ Download AI model** (one‑time on‑device download) → set your email on the **Settings** page. *(The backend URL is preconfigured/committed by default — no need to set it.)*
 
 **b) Backend (local)**
 ```bash
