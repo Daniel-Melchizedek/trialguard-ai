@@ -1,172 +1,131 @@
-# TrialGuard — AI-Powered Free Trial Watchdog
+# TrialGuard — AI‑powered free‑trial watchdog & autonomous canceller
 
-> Never get charged by surprise. TrialGuard detects free trial sign-ups as you browse and sends you a reminder email 3 days before the trial ends — so you can cancel in time.
-
-## How It Works
-
-1. **Browse normally** — the Edge extension silently monitors pages you visit
-2. **AI detects trials** — Aion 1.0 Instruct (Edge built-in model) analyzes page text entirely on-device; your browsing data never leaves your computer
-3. **Metadata saved** — only the extracted trial info (product name, end date) is sent to the secure Azure backend
-4. **Email reminder** — 3 days before your trial ends, you receive an email with a cancellation link
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Browser Extension | Microsoft Edge (Manifest V3) |
-| On-device AI | Aion 1.0 Instruct via Edge Prompt API (Build 2026) |
-| Backend | Azure Functions (Node.js v4) |
-| Database | Azure Cosmos DB (NoSQL) |
-| Email | Azure Communication Services |
-| Secrets | Azure Key Vault |
-| IaC | Azure Bicep + `azd` |
-
-## Hackathon Theme
-
-**Agentic Web** — an autonomous agent that monitors browsing, uses AI to understand intent, and takes real-world action on the user's behalf.
+> Never get charged by surprise. **TrialGuard** (shown in‑product as **"Trial Guard"**) detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with **Aion‑1.0‑Instruct**, an on‑device small language model (SLM) that runs on Windows via Microsoft Edge — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
+>
+> **Theme: Agentic Web** — an agent that watches your browsing, understands intent with on‑device AI, and takes real action on your behalf.
 
 ---
 
-## Prerequisites
+## 1. Project Description
 
-- Node.js 20+
-- Azure Functions Core Tools v4 (`npm i -g azure-functions-core-tools@4`)
-- Azure Developer CLI (`winget install microsoft.azd`)
-- Microsoft Edge 150.0.4070+ (Canary/Dev for Aion 1.0)
-- An Azure subscription
+Free trials convert to paid charges when you forget to cancel. TrialGuard solves this end‑to‑end:
+
+- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your page content never leaves the device — only the small extracted metadata is sent to the backend.
+- **Remind** — An Azure Functions backend stores the trial and emails you reminders (a Day‑1 note on detection, then reminders as the end date nears), each with a countdown, a "Manage subscription" link, and a short **AI‑generated tip** for getting value from the product.
+- **Cancel autonomously** — From the popup you launch a **side‑panel agent** that opens the product's account page and works through the cancellation flow on its own: *observe the page → ask Aion for the next action → click/select → repeat*. It chooses survey reasons, declines retention offers ("No thanks"), and **pauses for you to type your password** (it never auto‑fills credentials). You can hit **Stop** at any time.
+
+A bundled **sample web app ("Neuro Revive")** is included so you can test **trial activation and cancellation through the extension without signing up for any real trials that require payment information** — no real product, no credit card, fully repeatable.
 
 ---
 
-## Local Development
+## 2. Architecture Overview
 
-### 1. Clone and install
+```
+ Browser (Microsoft Edge 150+ with Aion‑1.0‑Instruct, on Windows)
+ ┌──────────────────────────────────────────────────────────┐
+ │ Extension (Manifest V3)                                   │
+ │  content.js (MAIN world) ──on‑device Aion detection──┐    │
+ │        │ window.postMessage                          │    │
+ │  bridge.js (ISOLATED) ── chrome.storage.sync ────────┘    │
+ │        │ chrome.runtime                                    │
+ │  background.js (service worker)                            │
+ │   • saves trial to backend                                │
+ │   • cancellation AGENT loop (chrome.scripting, allFrames, │
+ │     Aion picks next action, password gate, Stop)          │
+ │  UIs: popup · sidepanel (live log/timer/verbose) · download│
+ └───────────────┬───────────────────────────────────────────┘
+                 │ HTTPS (trial metadata + status)
+ ┌───────────────▼───────────────────────────────────────────┐
+ │ Azure Functions backend (Node ≥ 22)                        │
+ │  saveTrial (HTTP)   → Cosmos DB + Day‑1 email              │
+ │  checkTrials (timer 0 0 9 * * * UTC) → daily reminders      │
+ │  patchTrial (HTTP)  → cancellation‑status updates          │
+ │  emailClient → Azure Communication Services (email)        │
+ │  aiClient/agentClient → Azure AI Foundry Agent (tips)      │
+ │  webRetriever → site scrape + Bing fallback (tip grounding)│
+ └───────────────┬───────────────────────────────────────────┘
+   Cosmos DB · Communication Services · AI Foundry (gpt‑4o‑mini) · Key Vault
+   (provisioned with Bicep + azd — see infrastructure/ and azure.yaml)
+```
+
+| Component | Path | Responsibility |
+|---|---|---|
+| Content script | `extension/content.js` | On‑device Aion trial detection (MAIN world) |
+| Bridge | `extension/bridge.js` | ISOLATED‑world `chrome.*` access; dedupe + persist to `storage.sync` |
+| Service worker | `extension/background.js` | Backend save + the autonomous cancellation agent loop |
+| Popup | `extension/popup/` | Detected trials, Cancel/Retry, AI‑model download entry |
+| Side panel | `extension/sidepanel/` | Live cancellation log, elapsed timer, Verbose prompt view, Stop |
+| Download page | `extension/download/` | Guided on‑device Aion model download |
+| Backend | `backend/` | Azure Functions: `saveTrial`, `checkTrials`, `patchTrial` + utils |
+| Sample app | `sample-free-trial-web-app/` | .NET 10 test harness for activation + cancellation |
+| Infra | `infrastructure/`, `azure.yaml` | Bicep + `azd` resource provisioning |
+
+---
+
+## 3. AI Tools Used
+
+| Where | Tool / model | Purpose | Cloud? |
+|---|---|---|---|
+| Trial detection (`content.js`) | **Aion‑1.0‑Instruct** — on‑device SLM (Windows / Microsoft Edge), Prompt API `LanguageModel` | Classify *free trial* vs *free plan*; extract product name + end date | No (on‑device) |
+| Cancellation agent (`background.js`) | **Aion‑1.0‑Instruct** — on‑device SLM (Windows / Microsoft Edge) | Pick the next action from the page's accessibility tree; confirm cancellation succeeded | No (on‑device) |
+| Email tips (`agentClient.js`) | **Azure AI Foundry Agents v2** (`@azure/ai-projects`, agent `trialguard-tip-agent`, model `gpt-4o-mini`, `web_search_preview` tool) | Generate a 1–2 sentence actionable product tip | Yes |
+| Tip grounding (`webRetriever.js`) | **Bing Search** (fallback) | Fetch product context when the site scrape is thin | Yes |
+
+Development was assisted by AI coding tools such as **GitHub Copilot**.
+
+---
+
+## 4. Setup Instructions
+
+**Prerequisites:** Windows · Microsoft Edge **150.0.4070+** (Canary/Dev with the on‑device **Aion‑1.0‑Instruct** model enabled) · **Node.js ≥ 22** · Azure Functions Core Tools v4 (`npm i -g azure-functions-core-tools@4`) · Azure Developer CLI (`winget install microsoft.azd`) · .NET 10 SDK (for the sample app) · an Azure subscription.
 
 ```bash
-git clone <repo-url>
-cd hackerearthbuildai/backend
-npm install
+git clone https://github.com/Daniel-Melchizedek/trialguard-ai.git
+cd trialguard-ai
 ```
 
-### 2. Configure environment
+**a) Extension** — Open `edge://extensions` → enable **Developer mode** → **Load unpacked** → select the `extension/` folder → open the TrialGuard popup → click **⬇️ Download AI model** (one‑time on‑device download) → set your email on the **Settings** page. *(The backend URL is preconfigured/committed by default — no need to set it.)*
 
-Copy `local.settings.json.example` to `local.settings.json` and fill in your values:
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "node",
-    "COSMOS_ENDPOINT": "https://<account>.documents.azure.com:443/",
-    "COSMOS_KEY": "<your-key>",
-    "COSMOS_DATABASE": "trialguard",
-    "COSMOS_CONTAINER": "trials",
-    "ACS_CONNECTION_STRING": "<your-acs-connection-string>",
-    "EMAIL_SENDER": "DoNotReply@<domain>.azurecomm.net",
-    "BACKEND_URL": "http://localhost:7071"
-  }
-}
-```
-
-### 3. Start backend
-
+**b) Backend (local)**
 ```bash
 cd backend
-func start
+npm install
+cp local.settings.json.example local.settings.json   # then fill in the values below
+func start                                            # http://localhost:7071
 ```
+Required app settings / env vars: `COSMOS_ENDPOINT`, `COSMOS_KEY`, `COSMOS_DATABASE` (default `trialguard`), `COSMOS_CONTAINER` (default `trials`), `ACS_CONNECTION_STRING`, `EMAIL_SENDER`, `AZURE_AI_PROJECT_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` (default `gpt-4o-mini`), and optionally `BING_SEARCH_KEY`. (Azure AI Foundry auth uses `DefaultAzureCredential` — run `az login` locally.)
 
-### 4. Load extension in Edge
-
-1. Open `edge://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked** → select the `extension/` folder
-4. Click the TrialGuard icon → enter your email address
-
----
-
-## Deploy to Azure
-
-```bash
-azd up
-```
-
-This provisions all Azure resources and deploys the Functions app in one command.
-
-After deploy, update `extension/config.js` with the deployed Function App URL.
-
----
-
-## Project Structure
-
-```
-hackerearthbuildai/
-├── extension/          # Edge Manifest V3 extension
-├── backend/            # Azure Functions (Node.js v4)
-├── infrastructure/     # Bicep IaC templates
-└── azure.yaml          # azd project definition
-```
-
----
-
-## Sample Free Trial Web App
-
-The [`sample-free-trial-web-app/`](sample-free-trial-web-app/) directory contains a standalone ASP.NET Core web application designed to **test TrialGuard end-to-end without relying on real-world products** (e.g. Adobe, Microsoft 365 trials).
-
-### What It Is
-
-**NeuroRevive** — a fictional clinical brain research SaaS platform that simulates a realistic free trial sign-up flow. It gives TrialGuard a safe, controlled target page to detect, parse, and track.
-
-### Why It Exists
-
-Testing TrialGuard against real products is impractical — trials have limited slots, require credit cards, and can't be reset. This app provides a repeatable, local environment with known trial metadata so you can verify the full detection → reminder pipeline.
-
-### Features
-
-- 2-day free trial sign-up (no credit card required)
-- Form collects First Name, Last Name, Email with server-side validation
-- Duplicate email detection
-- Trial expiry auto-calculated from sign-up time (UTC)
-- Confirmation page with exact trial end date — the data TrialGuard should extract
-- JSON file-based subscription persistence (`Data/subscriptions.json`)
-- Docker support (port 8080)
-
-### Pages
-
-| Route | Purpose |
-|---|---|
-| `/` | Landing page with hero, feature cards, and CTA |
-| `/Subscribe` | Free trial sign-up form |
-| `/ThankYou` | Confirmation with user name and trial expiry date |
-| `/Privacy` | Privacy policy |
-
-### Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Framework | ASP.NET Core Razor Pages (.NET 10) |
-| Frontend | Bootstrap 5, jQuery, Bootstrap Icons |
-| Storage | JSON file (`~/Data/subscriptions.json`) |
-| Container | Docker (ASP.NET 10 base image) |
-
-### Running Locally
-
+**c) Sample app** — test activation + cancellation without any real trial:
 ```bash
 cd sample-free-trial-web-app
-dotnet run
+dotnet run                          # https://localhost:5001
+# or: docker build -t neurorevive . && docker run -p 8080:8080 neurorevive
 ```
+Sign up on `/Subscribe`, land on `/ThankYou` (the extension detects the trial), then use the popup's **Cancel Trial** to watch the agent cancel it on `/Cancel`.
 
-Then open `https://localhost:5001` (or the port shown in the terminal), navigate to `/Subscribe`, and complete the sign-up. The ThankYou page will display the trial expiry date — load the extension and confirm TrialGuard detects it correctly.
-
-Or with Docker:
-
+**d) Deploy to Azure**
 ```bash
-docker build -t neurorevive .
-docker run -p 8080:8080 neurorevive
+azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Vault + deploys the Functions app
 ```
 
 ---
 
-## Submission
+## 5. Dependencies
 
-- **Theme:** Agentic Web
-- **Privacy model:** Page content analyzed 100% on-device by Aion 1.0 Instruct. Only metadata sent to cloud.
+| Area | Key dependencies |
+|---|---|
+| **Extension** | Manifest V3, vanilla JS (no build/npm). Requires Windows + Edge 150+ with the on‑device **Aion‑1.0‑Instruct** model. Permissions: `storage`, `scripting`, `activeTab`, `tabs`, `sidePanel`, host `<all_urls>`. |
+| **Backend** | Node ≥ 22 · `@azure/functions ^4.5` · `@azure/cosmos ^4.1` · `@azure/communication-email ^1.0` · `@azure/identity ^4.4` · `@azure/ai-projects ^2.0` · `cheerio ^1.0`. Azure Functions Core Tools v4; Bicep + `azd` for IaC. |
+| **Sample app** | .NET 10 · ASP.NET Core Razor Pages · Bootstrap 5 · Docker (`mcr.microsoft.com/dotnet/aspnet:10.0`). |
+
+---
+
+## 6. Team Members & Roles
+
+| Name | Role | Contributions |
+|---|---|---|
+| **Daniel Melchizedek Arockia Thomas Samuel** | Full‑stack Developer & Project Lead | Edge extension (on‑device Aion detection + autonomous cancellation agent, popup/side‑panel/download UIs), Azure Functions backend, Azure AI Foundry tip agent, .NET sample app, and Bicep/`azd` infrastructure. |
+
+---
+
+**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** (on‑device SLM); only extracted trial metadata is sent to the cloud.
