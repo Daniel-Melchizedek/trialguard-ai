@@ -126,6 +126,25 @@ async function tabScriptability(tabId) {
   return { ok: true, url };
 }
 
+// A server-served 404 / "not found" page.
+function looksLike404(obs) {
+  if (!obs) return false;
+  const t = `${obs.title || ""}  ${(obs.text || "").slice(0, 600)}`.toLowerCase();
+  return /\b404\b|not found|page (?:can.?t be found|doesn.?t exist|isn.?t available)|openresty/.test(t);
+}
+
+// Map the current host to the product's account portal.
+function accountUrlFor(currentUrl) {
+  try {
+    const u = new URL(currentUrl);
+    const parts = u.hostname.split(".").filter(Boolean);
+    if (parts.length < 2) return null;
+    const domain = parts.slice(-2).join(".");            
+    if (u.hostname === `account.${domain}`) return null; // already on the account host — don't loop
+    return `https://account.${domain}/`;
+  } catch { return null; }
+}
+
 async function observePage(tabId) {
   try {
     const results = await chrome.scripting.executeScript({
@@ -961,6 +980,7 @@ async function runCancellationAgent(trial, tabId) {
     // the page has fully loaded — so we never judge a half-loaded page).
     let pending = null; // { step, priorUrl, priorSig }
     let restrictedTries = 0; // consecutive iterations the tab was on a non-scriptable page
+    let accountRedirectTried = false; // first-page 404 → account.<domain> fallback (once per cancellation)
 
     // No step cap — loop runs until done / error / user Stop (per user request).
     for (let i = 0; ; i++) {
@@ -1016,6 +1036,21 @@ async function runCancellationAgent(trial, tabId) {
         // Tab closed or went to a restricted page mid-wait — stop spinning and let the
         // top-of-loop guard halt (gone) or recover (restricted) on the next iteration.
         if (observation.tabGone || observation.restricted) break;
+
+        // First page only (i === 0): if the origin we opened on Cancel/Retry is a site-served
+        // 404, redirect once to the product's account portal (e.g. commerce.adobe.com → account.adobe.com).
+        // 404s reached later in the flow are left to the existing handling.
+        if (i === 0 && !accountRedirectTried && looksLike404(observation)) {
+          const acct = accountUrlFor(observation.url);
+          if (acct) {
+            accountRedirectTried = true;
+            spToast("info", `Page not found — trying ${acct} instead…`, trialId);
+            try { await BrowserActions.navigate(tabId, acct); await waitForStable(tabId, ac.signal); } catch {}
+            if (ac.signal.aborted) break;
+            observation = await observePage(tabId);
+            continue;   // re-evaluate the account page from the top of the loop
+          }
+        }
         waitTries++;
         if (observation.errorPage) {
           // The tab landed on a browser error page — recover by going back, then reload.
