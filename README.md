@@ -6,6 +6,15 @@
 
 ---
 
+## Demo
+
+| **Video** | **Description** |
+|---|---|
+| [Extension walkthrough 🎥](<video_link1>) | See Trial Guard detect a free-trial sign-up in Edge, send the reminder email, and autonomously cancel the subscription using the on-device Aion-1.0-Instruct model. |
+| [Setup guide 🎥](<video_link2>) | How to load the unpacked extension in Microsoft Edge Developer mode and enable the required Aion on-device model settings. |
+
+---
+
 ## 1. Project Description
 
 Free trials convert to paid charges when you forget to cancel. Trial Guard solves this end‑to‑end:
