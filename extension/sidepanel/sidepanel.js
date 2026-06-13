@@ -61,7 +61,7 @@ function appendToast(type, message) {
     iconEl.className = "toast-icon spinning";
   } else {
     const icons = { done: "✓", error: "✗", stopped: "■", info: "●",
-                    select: "🔍", context: "📄", confirm: "✓", reconsider: "↻", password: "🔒", prompt: "🧠" };
+                    select: "✨", context: "📄", confirm: "✓", reconsider: "↻", password: "🔒", prompt: "🧠" };
     iconEl.className = "toast-icon";
     iconEl.textContent = icons[type] || "●";
   }

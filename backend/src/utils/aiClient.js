@@ -20,16 +20,19 @@ function computeDayNumber(detectedAt) {
 }
 
 async function generateTrialTip(trial) {
-  // Retrieve up-to-date product context (unchanged), then generate the tip via the
-  // Azure AI Foundry agent instead of calling the model directly. Behaviour is the
-  // same: same persona/constraints (agent instructions), same context, same sampling.
-  const context = await fetchProductContext(trial.websiteUrl, trial.productName);
-  const tip = await generateTipWithAgent(trial, context);
-
-  return (
-    (tip && tip.trim()) ||
-    `Explore the key features of ${trial.productName} today to make the most of your remaining trial time.`
-  );
+  // Always return a non-empty tip so the email never goes out missing its "Today's tip"
+  // box. A transient failure in the agent path (e.g. a 429 rate-limit on the model) must
+  // NOT bubble up — otherwise the caller catches it and sends a tip-less email.
+  const fallback =
+    `Explore the key features of ${trial.productName} today to make the most of your remaining trial time.`;
+  try {
+    const context = await fetchProductContext(trial.websiteUrl, trial.productName);
+    const tip = await generateTipWithAgent(trial, context);
+    return (tip && tip.trim()) || fallback;
+  } catch (err) {
+    console.error(`[TrialGuard] Tip generation failed for ${trial.productName}: ${err?.message || err}`);
+    return fallback;
+  }
 }
 
 module.exports = { generateTrialTip, computeDaysLeft, computeDayNumber };

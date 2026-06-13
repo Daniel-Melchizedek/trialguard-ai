@@ -88,9 +88,12 @@ async function generateTipWithAgent(trial, context) {
   // Invoke the agent via the Responses API (agent_reference resolves by name to
   // the agent's latest version). Sampling (temperature/top_p) is set on the agent
   // definition; max_output_tokens matches the previous 120-token cap.
+  // maxRetries/timeout: the OpenAI client retries transient failures (429 rate-limit,
+  // 5xx, timeouts) with exponential backoff — this is the main reason tips occasionally
+  // failed. Bump retries so the real tip survives transient blips before any fallback.
   const response = await openai.responses.create(
     { input, max_output_tokens: 120 },
-    { body: { agent_reference: { name, type: "agent_reference" } } }
+    { body: { agent_reference: { name, type: "agent_reference" } }, maxRetries: 4, timeout: 60000 }
   );
 
   return sanitizeTip(response.output_text);

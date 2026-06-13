@@ -129,19 +129,26 @@ async function checkAionStatus() {
     return;
   }
 
-  // The persisted aionReady flag is the reliable "already downloaded" signal: right after a
-  // cold browser start, availability() can transiently report downloadable/downloading/unknown
-  // for a model that's actually on disk. So treat the model as downloaded if availability()
-  // confirms it now OR we recorded it ready in a prior session (set here or by the download page).
+  // Fast path: if a prior session already recorded the model as downloaded, show "ready"
+  // WITHOUT the slow on-device availability() probe. That probe warms up the Aion runtime
+  // and is the main thing making the popup feel sluggish on open — and its result isn't
+  // even needed once aionReady is set (we'd show "ready" regardless). storage.local read is cheap.
   const { aionReady } = await chrome.storage.local.get("aionReady");
+  if (aionReady) {
+    statusEl.className = "ai-status ready";
+    statusEl.textContent = "✓ Aion 1.0 ready";
+    statusEl.classList.remove("hidden");
+    setTimeout(() => statusEl.classList.add("hidden"), 2000);
+    return;
+  }
+
+  // Not known-ready yet → probe availability (only until the model is downloaded the first time).
   let av;
   try { av = await LanguageModel.availability({ expectedOutputs: AION_OUTPUT }); } catch { av = "unknown"; }
 
-  if (av === "available" || aionReady) {
-    if (av === "available") {
-      // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.
-      chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
-    }
+  if (av === "available") {
+    // Keep the flag in sync so content.js detection re-runs (via bridge) if it was waiting.
+    chrome.storage.local.set({ aionReady: true, aionNeedsDownload: false });
     statusEl.className = "ai-status ready";
     statusEl.textContent = "✓ Aion 1.0 ready";
     statusEl.classList.remove("hidden");
@@ -171,7 +178,8 @@ async function checkAionStatus() {
   statusEl.classList.remove("hidden");
 }
 
-setTimeout(checkAionStatus, 0);
+// Defer the AI-status check to idle so the visible content (trial list, email) renders first.
+(window.requestIdleCallback || ((cb) => setTimeout(cb, 0)))(checkAionStatus);
 
 const trialList  = document.getElementById("trial-list");
 const emptyState = document.getElementById("empty-state");
