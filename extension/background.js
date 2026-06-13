@@ -202,7 +202,7 @@ async function observePage(tabId) {
         });
         // Cancellation-relevant elements must survive the cap even if they appear late in
         // DOM order (e.g. plan cards rendered in shadow DOM after lots of nav/footer links).
-        const RELEVANT = /manage|cancel|end\b|plan|subscription|membership|trial|account|continue|proceed|confirm|next\b|submit|renew|billing|payment|expensive|complicated|technical|completed|not using|change my plan|another membership|didn'?t work|experience|sorry/i;
+        const RELEVANT = /manage|cancel|end\b|plan|subscription|membership|trial|account|continue|proceed|confirm|next\b|submit|renew|billing|payment|expensive|complicated|technical|completed|not using|change my plan|another membership|didn'?t work|experience|sorry|no thanks|no thank you|not interested|decline|skip/i;
         const labelOf = el => (el.getAttribute("aria-label") || el.getAttribute("title") || el.innerText || "").trim();
         const relevant = visible.filter(el => RELEVANT.test(labelOf(el)));
         const others   = visible.filter(el => !RELEVANT.test(labelOf(el)));
@@ -439,6 +439,10 @@ function stepResultLabel(result) {
 // (No "profile" — avatar/profile menus pull the agent away from the cancel flow.)
 const CANCEL_KEYWORDS = /\baccount\b|billing|subscription|subscribe|\bplan\b|plans|manage|cancel|trial|member|setting|continue|confirm|proceed|next|payment|renew/i;
 
+// Buttons that DECLINE a retention/upsell offer — these ADVANCE cancellation, so they must be
+// selectable (not treated as junk/keep). e.g. "No thanks", "Not interested", "No, continue".
+const DECLINE_OFFER = /\bno,?\s*thanks?\b|no thank you|not interested|^\s*decline\b|^\s*skip\b|no,? continue|continue to cancel|cancel anyway/i;
+
 // Junk links that look relevant but are dead ends or wrong direction (help articles,
 // legal, FAQs, footer, account-security, upsell/renew, files, navigation back to marketing).
 const JUNK_KEYWORDS = /adchoices|cookie|privacy|terms|conditions|legal|agreement|policy|do not sell|change region|learn more|faq|review top|what should i|how do i\b|how-?to|troubleshoot|help center|help with|contact us|support|community|opt.?out|^learn |social sign|sign ?in|renew|extend|navigation menu|opens file|\.pdf|download|install|redemption|storage|files or folders|^adobe\.com|view support|orders and invoices|activated devices|communication preferences|notifications|change payment|view billing|billing history|update payment|payment method|edit payment|add payment|keep your plan|keep my plan|keep my trial|close dialog|^close$|^user$|^help$|^previous$|change email|change password|edit profile|personal profile|account and security|profile information|manage account|manage your account|reset your password|stay signed in|remember.?me|show password/i;
@@ -454,6 +458,8 @@ function cancelRelevance(e) {
   if (/terms|conditions|policy|agreement|legal|social sign|renew|extend/.test(s)) return 0;
   // A benign cancellation-survey reason (so it's selected before "Continue").
   if (PREFERRED_CANCEL_REASON.test(s)) return 6;
+  // Declining a retention/upsell offer ("No thanks", "Not interested") proceeds with cancelling.
+  if (DECLINE_OFFER.test(s)) return 5;
   // Direct cancellation actions.
   if (/cancel|end.?(your )?(free )?(trial|membership|subscription)|terminate|close.?account/.test(s)) return 5;
   // The "Manage plan" / "Manage subscription" button (the real path to cancel).
@@ -523,14 +529,14 @@ function buildMenuPrompt(trial, observation, stepsTaken, avoid = new Set()) {
       // page entirely (apps, account menu, "view more", billing, help) so we don't deviate.
       const FLOW = /\b(continue|proceed|confirm|next|done|finish|complete)\b|cancel (your )?(free )?(trial|membership|subscription|plan)|end (your )?(free )?(trial|membership)|confirm cancell/i;
       candidates = observation.elements.filter(e =>
-        FLOW.test(e.label) && !JUNK_KEYWORDS.test(e.label) &&
+        (FLOW.test(e.label) || DECLINE_OFFER.test(e.label)) && !JUNK_KEYWORDS.test(e.label) &&
         !/keep (your|my)|^keep\b|previous|^back$|go back|^close$|close dialog|manage plan|manage account|view \d+ more|included in your plan/i.test(`${e.label} ${e.nearbyHeading}`)
       );
     } else {
       // Not yet in the flow: the broader cancellation-relevant shortlist (Manage plan / Cancel
       // trial must remain available here; only exclude obvious keep/back/close/profile actions).
       candidates = observation.elements.filter(e =>
-        (CANCEL_KEYWORDS.test(`${e.label} ${e.nearbyHeading}`) || PREFERRED_CANCEL_REASON.test(e.label)) &&
+        (CANCEL_KEYWORDS.test(`${e.label} ${e.nearbyHeading}`) || PREFERRED_CANCEL_REASON.test(e.label) || DECLINE_OFFER.test(e.label)) &&
         !JUNK_KEYWORDS.test(e.label) &&
         !/keep (your|my)|^keep\b|previous|^back$|go back|^close$|close dialog/i.test(e.label)
       );
@@ -549,6 +555,20 @@ function buildMenuPrompt(trial, observation, stepsTaken, avoid = new Set()) {
     .sort((a, b) => b.r - a.r || a.i - b.i)
     .slice(0, 10)
     .map(x => x.e);
+
+  // Fallback: filtering left nothing, but the page may still have a clear advance/decline
+  // button (Continue / No thanks / Confirm). Surface those anyway — ignoring the avoid set and
+  // nearby-heading filters (excluding only hard back/keep/close) — so the agent acts instead of
+  // spinning on "No actionable element yet…".
+  if (candidates.length === 0) {
+    const HARD_BACK = /keep (your|my)|^keep\b|^back$|previous|go back|^close$|close dialog/i;
+    candidates = observation.elements
+      .filter(e => e.label && (CONTINUE.test(e.label) || DECLINE_OFFER.test(e.label)) && !e.disabled && !HARD_BACK.test(e.label))
+      .map((e, idx) => ({ e, idx, r: DECLINE_OFFER.test(e.label) ? 5 : 2 }))
+      .sort((a, b) => b.r - a.r || a.idx - b.idx)
+      .slice(0, 10)
+      .map(x => x.e);
+  }
 
   const menu = candidates.map((e, n) => {
     const tag = e.isProfile ? "[ACCOUNT] " : "";
