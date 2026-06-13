@@ -70,13 +70,16 @@ function renderTrial(trial) {
     btn.className = "btn-cancel";
     btn.textContent = (status === "failed" || status === "stopped") ? "Retry Cancellation" : "Cancel Trial";
     btn.addEventListener("click", async () => {
-      // Open the trial's captured link in a NEW tab first, then run the cancellation
-      // there. websiteUrl is stored as a bare hostname, so add a scheme; prefer the exact
-      // detected page (pageUrl) when available. Fall back to the active tab if no link.
+      // Open the trial's captured link in a NEW tab first, then run the cancellation there.
+      // Use only the ORIGIN (scheme + host) — transient confirmation/checkout URLs with deep
+      // paths/queries are poor starting points, so the agent starts from the site root.
+      // websiteUrl is a bare hostname, so add a scheme before parsing. Fall back to the active tab.
       const captured = trial.pageUrl || trial.websiteUrl || "";
-      const url = captured
-        ? (/^https?:\/\//i.test(captured) ? captured : `https://${captured}`)
-        : null;
+      let url = null;
+      if (captured) {
+        const withScheme = /^https?:\/\//i.test(captured) ? captured : `https://${captured}`;
+        try { url = new URL(withScheme).origin + "/"; } catch { url = withScheme; }
+      }
       let tab;
       if (url) {
         tab = await chrome.tabs.create({ url, active: true });
