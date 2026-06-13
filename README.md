@@ -1,6 +1,6 @@
 # TrialGuard — AI‑powered free‑trial watchdog & autonomous canceller
 
-> Never get charged by surprise. **TrialGuard** (shown in‑product as **"Trial Guard"**) detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with **Aion‑1.0‑Instruct**, an on‑device small language model (SLM) that runs on Windows via Microsoft Edge — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
+> Never get charged by surprise. **TrialGuard** (shown in‑product as **"Trial Guard"**) detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with [**Aion‑1.0‑Instruct**](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) — **Microsoft's** on‑device small language model (SLM) on Windows — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
 >
 > **Theme: Agentic Web** — an agent that watches your browsing, understands intent with on‑device AI, and takes real action on your behalf.
 
@@ -73,6 +73,8 @@ A bundled **sample web app ("Neuro Revive")** is included so you can test **tria
 
 Development was assisted by AI coding tools such as **GitHub Copilot**.
 
+> **Aion‑1.0‑Instruct** is Microsoft's prerelease on‑device SLM built into Microsoft Edge (Edge 150.0.4070+, Windows). Refs: [Microsoft Edge Prompt API — the Aion‑1.0‑Instruct model](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) · [Build 2026 — Windows as the trusted platform for development](https://blogs.windows.com/windowsdeveloper/2026/06/02/build-2026-furthering-windows-as-the-trusted-platform-for-development/).
+
 ---
 
 ## 4. Setup Instructions
@@ -128,4 +130,4 @@ azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Va
 
 ---
 
-**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** (on‑device SLM); only extracted trial metadata is sent to the cloud.
+**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** (Microsoft's built‑in Edge SLM); only extracted trial metadata is sent to the cloud.
