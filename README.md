@@ -150,6 +150,8 @@ git clone https://github.com/Daniel-Melchizedek/trialguard-ai.git
 cd trialguard-ai
 ```
 
+> **Don't have Microsoft Edge Canary?** [Download and install Microsoft Edge Canary](https://www.microsoft.com/en-us/edge/download/insider?form=MA13FJ) before continuing — the on‑device Aion‑1.0‑Instruct model requires Edge Canary (150.0.4070+) on Windows.
+
 ### a) Enable the Edge Prompt API
 
 Trial Guard relies on the **Prompt API** — Microsoft Edge's built‑in interface to **Aion‑1.0‑Instruct** — for all on‑device AI features. This should be enabled for the extension to work.
