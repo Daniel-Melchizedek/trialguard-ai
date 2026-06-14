@@ -31,7 +31,7 @@ A bundled **sample web app ("Neuro Revive")** is included so you can test **tria
 
 ![Trial Guard — Azure Architecture](architecture-diagram/Trial%20Guard%20%E2%80%94%20Azure%20Architecture.png)
 
-> To explore the diagram interactively (clickable nodes, hover details), [click here](architecture-diagram/interactive-architecture-diagram.html).
+> To explore the diagram interactively (clickable nodes, hover details), [click here](https://daniel-melchizedek.github.io/trialguard-ai/architecture-diagram/interactive-architecture-diagram.html).
 
 ```
  Browser (Microsoft Edge 150+ with Aion‑1.0‑Instruct, on Windows)
