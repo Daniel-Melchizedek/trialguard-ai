@@ -150,7 +150,14 @@ git clone https://github.com/Daniel-Melchizedek/trialguard-ai.git
 cd trialguard-ai
 ```
 
-### a) Load the extension in Edge
+### a) Enable the Edge Prompt API
+
+Trial Guard relies on the **Prompt API** — Microsoft Edge's built‑in interface to **Aion‑1.0‑Instruct** — for all on‑device AI features. This should be enabled for the extension to work.
+
+Follow the official instructions to enable it:
+**[Enable the Prompt API — Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#enable-the-prompt-api)**
+
+### b) Load the extension in Edge
 
 1. Open `edge://extensions` in Microsoft Edge
 2. Enable **Developer mode** (toggle, top‑right)
@@ -160,7 +167,7 @@ cd trialguard-ai
 
 > The backend URL is preconfigured in the extension — no manual changes needed.
 
-### b) Run the backend locally
+### c) Run the backend locally
 
 > ✅ **Already live in Azure — you can skip this step.** The backend is deployed and running. Local setup is only needed if you want to modify or debug the backend functions yourself.
 
@@ -187,7 +194,7 @@ Fill in the following values in `local.settings.json`:
 
 > Azure AI Foundry uses `DefaultAzureCredential` — run `az login` before starting the backend locally.
 
-### c) Run the sample app (Neuro Revive)
+### d) Run the sample app (Neuro Revive)
 
 > ✅ **Already live — you can skip this step.** The sample app is deployed at **[https://tg-neurorevive-app.azurewebsites.net](https://tg-neurorevive-app.azurewebsites.net)**. Use it directly to test trial detection and cancellation without any local setup. Run locally only if you want to modify the sample app itself.
 
@@ -203,7 +210,7 @@ docker build -t neurorevive . && docker run -p 8080:8080 neurorevive
 1. Sign up on `/Subscribe` — the extension detects the trial automatically
 2. Open the Trial Guard popup → click **Cancel Trial** to watch the agent navigate and cancel on `/Cancel`
 
-### d) Deploy to Azure
+### e) Deploy to Azure
 
 > ✅ **Already deployed — you can skip this step.** The full Azure infrastructure is live. Run `azd up` only if you are deploying to your own Azure subscription.
 
