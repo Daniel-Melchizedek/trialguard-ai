@@ -10,8 +10,7 @@
 
 | **Video** | **Description** |
 |---|---|
-| [Extension walkthrough 🎥](<video_link1>) | See Trial Guard detect a free-trial sign-up in Edge, send daily AI-generated tips to help you get the most out of your trial, and — when you choose to cancel — autonomously complete the cancellation using the on-device Aion-1.0-Instruct model. |
-| [Setup guide 🎥](<video_link2>) | How to load the unpacked extension in Microsoft Edge Developer mode and enable the required Aion on-device model settings. |
+| [Extension walkthrough 🎥](https://youtu.be/ERvC9fHXExo) | See Trial Guard detect a free-trial sign-up in Edge, send daily AI-generated tips to help you get the most out of your trial, and — when you choose to cancel — autonomously complete the cancellation using the on-device Aion-1.0-Instruct model. |
 
 ---
 
@@ -128,8 +127,6 @@ Development was assisted by AI coding tools such as **GitHub Copilot**.
 ---
 
 ## 6. Setup Instructions
-
-> New here? Watch the [setup guide video in the Demo section](#demo) before you begin.
 
 ### Prerequisites
 
