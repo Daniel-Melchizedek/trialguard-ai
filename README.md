@@ -19,7 +19,7 @@
 
 Free trials are packed with value — but only if you use them. Trial Guard helps you get the most from every trial day with AI‑generated tips, and if you decide it's not the right fit, can cancel the subscription autonomously on your behalf:
 
-- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your full page content never leaves the device — only a small set of extracted metadata is sent to the backend (see §6 Data Privacy).
+- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your full page content never leaves the device — only a small set of extracted metadata is sent to the backend (see [§6 Data Privacy](#6-data-privacy)).
 - **Maximise your trial** — An Azure Functions backend stores the trial and emails you a daily **AI‑generated tip** — grounded in live web context — to help you discover features and get full value from the product throughout the trial period. Each email also includes a countdown and a "Manage subscription" link so you're always in control.
 - **Cancel autonomously, if you choose** — From the popup you launch a **side‑panel agent** that opens the product's account page and works through the cancellation flow on its own: *observe the page → ask Aion for the next action → click/select → repeat*. It chooses survey reasons, declines retention offers ("No thanks"), and **pauses for you to type your password** (it never auto‑fills credentials). You can hit **Stop** at any time.
 
@@ -176,4 +176,4 @@ If you choose to cancel a trial, the following additional fields are written to 
 
 ---
 
-**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** and never leaves your device — see §6 Data Privacy for full details on what is collected and why.
+**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** and never leaves your device — see [§6 Data Privacy](#6-data-privacy) for full details on what is collected and why.
