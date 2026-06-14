@@ -1,6 +1,6 @@
-# Trial Guard — AI‑powered free‑trial watchdog & autonomous canceller
+# Trial Guard — AI‑powered free‑trial companion & autonomous canceller
 
-> Never get charged by surprise. **Trial Guard** detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with [**Aion‑1.0‑Instruct**](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) — **Microsoft's** on‑device small language model (SLM) on Windows — then reminds you by email and can **autonomously cancel** the trial for you before it bills.
+> **Trial Guard** detects free‑trial sign‑ups as you browse — analyzing page content **100% on‑device** with [**Aion‑1.0‑Instruct**](https://learn.microsoft.com/en-us/microsoft-edge/web-platform/prompt-api#the-aion-10-instruct-model) — **Microsoft's** on‑device small language model (SLM) on Windows — then sends you a daily **AI‑generated tip** so you get full value from every day of your trial. If you ever decide the trial isn't for you, Trial Guard can **autonomously cancel** the subscription on your behalf — no hunting through settings, no surprise charges.
 >
 > **Theme: Agentic Web** — an agent that watches your browsing, understands intent with on‑device AI, and takes real action on your behalf.
 
@@ -10,18 +10,18 @@
 
 | **Video** | **Description** |
 |---|---|
-| [Extension walkthrough 🎥](<video_link1>) | See Trial Guard detect a free-trial sign-up in Edge, send the reminder email, and autonomously cancel the subscription using the on-device Aion-1.0-Instruct model. |
+| [Extension walkthrough 🎥](<video_link1>) | See Trial Guard detect a free-trial sign-up in Edge, send daily AI-generated tips to help you get the most out of your trial, and — when you choose to cancel — autonomously complete the cancellation using the on-device Aion-1.0-Instruct model. |
 | [Setup guide 🎥](<video_link2>) | How to load the unpacked extension in Microsoft Edge Developer mode and enable the required Aion on-device model settings. |
 
 ---
 
 ## 1. Project Description
 
-Free trials convert to paid charges when you forget to cancel. Trial Guard solves this end‑to‑end:
+Free trials are packed with value — but only if you use them. Trial Guard helps you get the most from every trial day with AI‑generated tips, and if you decide it's not the right fit, can cancel the subscription autonomously on your behalf:
 
-- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your page content never leaves the device — only the small extracted metadata is sent to the backend.
-- **Remind** — An Azure Functions backend stores the trial and emails you reminders (a Day‑1 note on detection, then reminders as the end date nears), each with a countdown, a "Manage subscription" link, and a short **AI‑generated tip** for getting value from the product.
-- **Cancel autonomously** — From the popup you launch a **side‑panel agent** that opens the product's account page and works through the cancellation flow on its own: *observe the page → ask Aion for the next action → click/select → repeat*. It chooses survey reasons, declines retention offers ("No thanks"), and **pauses for you to type your password** (it never auto‑fills credentials). You can hit **Stop** at any time.
+- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your full page content never leaves the device — only a small set of extracted metadata is sent to the backend (see §6 Data Privacy).
+- **Maximise your trial** — An Azure Functions backend stores the trial and emails you a daily **AI‑generated tip** — grounded in live web context — to help you discover features and get full value from the product throughout the trial period. Each email also includes a countdown and a "Manage subscription" link so you're always in control.
+- **Cancel autonomously, if you choose** — From the popup you launch a **side‑panel agent** that opens the product's account page and works through the cancellation flow on its own: *observe the page → ask Aion for the next action → click/select → repeat*. It chooses survey reasons, declines retention offers ("No thanks"), and **pauses for you to type your password** (it never auto‑fills credentials). You can hit **Stop** at any time.
 
 A bundled **sample web app ("Neuro Revive")** is included so you can test **trial activation and cancellation through the extension without signing up for any real trials that require payment information** — no real product, no credit card, fully repeatable.
 
@@ -135,7 +135,40 @@ azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Va
 
 ---
 
-## 6. Team Members & Roles
+## 6. Data Privacy
+
+### On‑device processing
+
+All page content is read and classified entirely on‑device by **Aion‑1.0‑Instruct** running inside Microsoft Edge. No page text, HTML, or screenshots are ever transmitted to Trial Guard's backend or any external service.
+
+### Metadata collected and stored in Cosmos DB
+
+| Field | Value | Purpose |
+|---|---|---|
+| `productName` | Name of the detected product or service | Identify the trial; shown in reminder emails |
+| `trialEndDate` / `trialDurationDays` | Trial expiry date or length in days | Calculate when to send daily reminders and the 3‑day pre‑expiry alert |
+| `websiteUrl` | URL of the page where the trial was detected | Provide context in reminder emails |
+| `pageTitle` | Title of that page | Provide context in reminder emails |
+| `userEmail` | Email address entered in the extension's Settings page | Send daily reminder emails; never shared with third parties |
+| `detectedAt` | Timestamp of when the trial was first detected | Determine the trial timeline and reminder schedule |
+
+If you choose to cancel a trial, the following additional fields are written to the same record:
+
+| Field | Purpose |
+|---|---|
+| `cancellationStatus` | Track whether cancellation is in progress, succeeded, or failed |
+| `cancellationStartedAt` / `cancellationCompletedAt` | Record the cancellation timeline |
+| `cancellationError` | Capture any error message if cancellation does not complete |
+
+### What is never collected
+
+- Full page content, HTML, or screenshots
+- Browsing history beyond the detected trial page
+- Passwords or credentials — the cancellation agent always pauses and waits for you to type these manually; they are never read, stored, or transmitted
+
+---
+
+## 7. Team Members & Roles
 
 | Name | Role | Contributions |
 |---|---|---|
@@ -143,4 +176,4 @@ azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Va
 
 ---
 
-**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** (Microsoft's built‑in Edge SLM); only extracted trial metadata is sent to the cloud.
+**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** and never leaves your device — see §6 Data Privacy for full details on what is collected and why.
