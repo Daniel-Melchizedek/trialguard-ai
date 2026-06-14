@@ -19,15 +19,52 @@
 
 Free trials are packed with value — but only if you use them. Trial Guard helps you get the most from every trial day with AI‑generated tips, and if you decide it's not the right fit, can cancel the subscription autonomously on your behalf:
 
-- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your full page content never leaves the device — only a small set of extracted metadata is sent to the backend (see [§6 Data Privacy](#6-data-privacy)).
+- **Detect** — As you browse, the Edge extension reads the page on‑device with **Aion‑1.0‑Instruct** (Edge Prompt API `LanguageModel`) and decides whether you've started a time‑limited *free trial* (vs a permanent free plan), extracting the product name and end date. Your full page content never leaves the device — only a small set of extracted metadata is sent to the backend (see [§8 Data Privacy](#8-data-privacy)).
 - **Maximise your trial** — An Azure Functions backend stores the trial and emails you a daily **AI‑generated tip** — grounded in live web context — to help you discover features and get full value from the product throughout the trial period. Each email also includes a countdown and a "Manage subscription" link so you're always in control.
 - **Cancel autonomously, if you choose** — From the popup you launch a **side‑panel agent** that opens the product's account page and works through the cancellation flow on its own: *observe the page → ask Aion for the next action → click/select → repeat*. It chooses survey reasons, declines retention offers ("No thanks"), and **pauses for you to type your password** (it never auto‑fills credentials). You can hit **Stop** at any time.
 
 A bundled **sample web app ("Neuro Revive")** is included so you can test **trial activation and cancellation through the extension without signing up for any real trials that require payment information** — no real product, no credit card, fully repeatable.
 
+> **See it in action first** — watch the video walkthroughs in the [Demo](#demo) section.
+
 ---
 
-## 2. Architecture Overview
+## 2. Innovation
+
+| What | Why it matters |
+|---|---|
+| **On‑device trial detection with Aion‑1.0‑Instruct** | Page content is classified entirely inside Microsoft Edge using the new Edge Prompt API (`LanguageModel`). No cloud round‑trip for detection — zero latency, full privacy. |
+| **Same on‑device SLM, two agentic tasks** | Aion‑1.0‑Instruct drives both trial detection (page classification) and autonomous cancellation (choosing UI actions from an accessibility tree) — demonstrating versatile on‑device agentic reasoning with a single model. |
+| **Universal autonomous cancellation** | Rather than hardcoding cancellation flows for specific websites, the agent observes the live accessibility tree, asks Aion for the next action, and executes it — making it work on any website without site‑specific code. |
+| **Hybrid on‑device + cloud AI pipeline** | Detection and cancellation use on‑device Aion (zero latency, full privacy); email tip generation uses **Azure AI Foundry Agents v2** with live web search grounding (`gpt‑4o‑mini` + `web_search_preview`) — each task uses the right compute for the job. |
+| **Agentic Web architecture** | The extension embodies the Agentic Web theme: it watches your browsing, understands intent with on‑device AI, and takes real‑world action on your behalf — all from a single click, with a human‑in‑the‑loop password gate to protect credentials. |
+
+---
+
+## 3. Benefits
+
+### For users
+
+| Benefit | How |
+|---|---|
+| **Maximise every trial day** | Daily AI‑generated tips (grounded in live web context) help you discover features and get real value before the trial expires. |
+| **Peace of mind** | Automatic on‑device detection means you are always aware of active trials — no more forgotten sign‑ups turning into unexpected charges. |
+| **Effortless cancellation, when you want it** | One click starts an agent that navigates the cancellation flow autonomously — no hunting through account settings, no missed deadlines. |
+| **Privacy by default** | Your browsing is analyzed entirely on‑device; only a small set of extracted metadata ever reaches the cloud (see [§8 Data Privacy](#8-data-privacy)). |
+| **Works on any website** | The cancellation agent is not tied to a list of supported services — it can navigate any website's cancellation flow using live page context. |
+
+### For trial product companies
+
+| Benefit | How |
+|---|---|
+| **Higher trial‑to‑paid conversion** | Users who receive daily AI‑generated tips learn the product more deeply during the trial, increasing the likelihood they see its value and choose to subscribe. |
+| **More trial sign‑ups** | Users who know they can cancel effortlessly are more willing to start trials — removing the fear of being locked in or forgetting to cancel. |
+| **Fewer chargebacks and disputes** | Users who are reminded throughout the trial and can cancel easily are less likely to dispute charges, reducing support costs and payment processor friction. |
+| **Stronger brand trust** | Offering a Trial Guard‑friendly experience signals that a product is confident in its value and respects user autonomy. |
+
+---
+
+## 4. Architecture Overview
 
 ![Trial Guard — Azure Architecture](architecture-diagram/Trial%20Guard%20%E2%80%94%20Azure%20Architecture.png)
 
@@ -75,12 +112,12 @@ A bundled **sample web app ("Neuro Revive")** is included so you can test **tria
 
 ---
 
-## 3. AI Tools Used
+## 5. AI Tools Used
 
 | Where | Tool / model | Purpose | Cloud? |
 |---|---|---|---|
-| Trial detection (`content.js`) | **Aion‑1.0‑Instruct** — on‑device SLM (Windows / Microsoft Edge), Prompt API `LanguageModel` | Classify *free trial* vs *free plan*; extract product name + end date | No (on‑device) |
-| Cancellation agent (`background.js`) | **Aion‑1.0‑Instruct** — on‑device SLM (Windows / Microsoft Edge) | Pick the next action from the page's accessibility tree; confirm cancellation succeeded | No (on‑device) |
+| Trial detection (`content.js`) | **Aion‑1.0‑Instruct** — Microsoft's on‑device SLM (Windows / Microsoft Edge), Prompt API `LanguageModel` | Classify *free trial* vs *free plan*; extract product name + end date | No (on‑device) |
+| Cancellation agent (`background.js`) | **Aion‑1.0‑Instruct** — Microsoft's on‑device SLM (Windows / Microsoft Edge) | Pick the next action from the page's accessibility tree; confirm cancellation succeeded | No (on‑device) |
 | Email tips (`agentClient.js`) | **Azure AI Foundry Agents v2** (`@azure/ai-projects`, agent `trialguard-tip-agent`, model `gpt-4o-mini`, `web_search_preview` tool) | Generate a 1–2 sentence actionable product tip | Yes |
 | Tip grounding (`webRetriever.js`) | **Bing Search** (fallback) | Fetch product context when the site scrape is thin | Yes |
 
@@ -90,42 +127,89 @@ Development was assisted by AI coding tools such as **GitHub Copilot**.
 
 ---
 
-## 4. Setup Instructions
+## 6. Setup Instructions
 
-**Prerequisites:** Windows · Microsoft Edge **150.0.4070+** (Canary/Dev with the on‑device **Aion‑1.0‑Instruct** model enabled) · **Node.js ≥ 22** · Azure Functions Core Tools v4 (`npm i -g azure-functions-core-tools@4`) · Azure Developer CLI (`winget install microsoft.azd`) · .NET 10 SDK (for the sample app) · an Azure subscription.
+> New here? Watch the [setup guide video in the Demo section](#demo) before you begin.
+
+### Prerequisites
+
+| Requirement | Details |
+|---|---|
+| **OS** | Windows — Aion‑1.0‑Instruct runs exclusively on Windows via Microsoft Edge |
+| **Microsoft Edge** | Version **150.0.4070+** (Canary or Dev channel) with the on‑device **Aion‑1.0‑Instruct** model enabled |
+| **Node.js** | ≥ 22 |
+| **Azure Functions Core Tools** | v4 — `npm i -g azure-functions-core-tools@4` |
+| **Azure Developer CLI** | `winget install microsoft.azd` |
+| **.NET 10 SDK** | Required for the sample app only |
+| **Azure subscription** | Required for cloud deployment |
+
+Clone the repo first:
 
 ```bash
 git clone https://github.com/Daniel-Melchizedek/trialguard-ai.git
 cd trialguard-ai
 ```
 
-**a) Extension** — Open `edge://extensions` → enable **Developer mode** → **Load unpacked** → select the `extension/` folder → open the Trial Guard popup → click **⬇️ Download AI model** (one‑time on‑device download) → set your email on the **Settings** page. *(The backend URL is preconfigured/committed by default — no need to set it.)*
+### a) Load the extension in Edge
 
-**b) Backend (local)**
+1. Open `edge://extensions` in Microsoft Edge
+2. Enable **Developer mode** (toggle, top‑right)
+3. Click **Load unpacked** → select the `extension/` folder
+4. Open the **Trial Guard popup** → click **⬇️ Download AI model** *(one‑time download; requires Edge Canary/Dev with Aion enabled)*
+5. Go to the **Settings** page in the popup → enter your email address
+
+> The backend URL is preconfigured in the extension — no manual changes needed.
+
+### b) Run the backend locally
+
 ```bash
 cd backend
 npm install
-cp local.settings.json.example local.settings.json   # then fill in the values below
-func start                                            # http://localhost:7071
+cp local.settings.json.example local.settings.json
+func start                          # http://localhost:7071
 ```
-Required app settings / env vars: `COSMOS_ENDPOINT`, `COSMOS_KEY`, `COSMOS_DATABASE` (default `trialguard`), `COSMOS_CONTAINER` (default `trials`), `ACS_CONNECTION_STRING`, `EMAIL_SENDER`, `AZURE_AI_PROJECT_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT` (default `gpt-4o-mini`), and optionally `BING_SEARCH_KEY`. (Azure AI Foundry auth uses `DefaultAzureCredential` — run `az login` locally.)
 
-**c) Sample app** — test activation + cancellation without any real trial:
+Fill in the following values in `local.settings.json`:
+
+| Setting | Description |
+|---|---|
+| `COSMOS_ENDPOINT` | Azure Cosmos DB account endpoint |
+| `COSMOS_KEY` | Cosmos DB primary key |
+| `COSMOS_DATABASE` | Database name (default: `trialguard`) |
+| `COSMOS_CONTAINER` | Container name (default: `trials`) |
+| `ACS_CONNECTION_STRING` | Azure Communication Services connection string |
+| `EMAIL_SENDER` | Verified sender email address |
+| `AZURE_AI_PROJECT_ENDPOINT` | Azure AI Foundry project endpoint |
+| `AZURE_OPENAI_DEPLOYMENT` | Deployment name (default: `gpt-4o-mini`) |
+| `BING_SEARCH_KEY` | *(Optional)* Bing Search API key for tip‑grounding fallback |
+
+> Azure AI Foundry uses `DefaultAzureCredential` — run `az login` before starting the backend locally.
+
+### c) Run the sample app (Neuro Revive)
+
+Use this to test trial detection and cancellation without signing up for any real paid service — no credit card required.
+
 ```bash
 cd sample-free-trial-web-app
 dotnet run                          # https://localhost:5001
-# or: docker build -t neurorevive . && docker run -p 8080:8080 neurorevive
+# or with Docker:
+docker build -t neurorevive . && docker run -p 8080:8080 neurorevive
 ```
-Sign up on `/Subscribe`, land on `/ThankYou` (the extension detects the trial), then use the popup's **Cancel Trial** to watch the agent cancel it on `/Cancel`.
 
-**d) Deploy to Azure**
+1. Sign up on `/Subscribe` — the extension detects the trial automatically
+2. Open the Trial Guard popup → click **Cancel Trial** to watch the agent navigate and cancel on `/Cancel`
+
+### d) Deploy to Azure
+
 ```bash
-azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Vault + deploys the Functions app
+azd up
 ```
+
+Provisions and deploys: Cosmos DB · Azure Communication Services · Azure AI Foundry · Key Vault · Azure Functions app.
 
 ---
 
-## 5. Dependencies
+## 7. Dependencies
 
 | Area | Key dependencies |
 |---|---|
@@ -135,7 +219,7 @@ azd up        # provisions Cosmos DB, Communication Services, AI Foundry, Key Va
 
 ---
 
-## 6. Data Privacy
+## 8. Data Privacy
 
 ### On‑device processing
 
@@ -168,7 +252,7 @@ If you choose to cancel a trial, the following additional fields are written to 
 
 ---
 
-## 7. Team Members & Roles
+## 9. Team Members & Roles
 
 | Name | Role | Contributions |
 |---|---|---|
@@ -176,4 +260,4 @@ If you choose to cancel a trial, the following additional fields are written to 
 
 ---
 
-**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** and never leaves your device — see [§6 Data Privacy](#6-data-privacy) for full details on what is collected and why.
+**Repository:** https://github.com/Daniel-Melchizedek/trialguard-ai · **Theme:** Agentic Web · **Privacy:** page content is analyzed entirely on‑device by **Aion‑1.0‑Instruct** and never leaves your device — see [§8 Data Privacy](#8-data-privacy) for full details on what is collected and why.
