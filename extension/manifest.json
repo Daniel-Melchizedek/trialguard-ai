@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Trial Guard",
   "version": "1.0.0",
-  "description": "AI-powered free trial tracker — never get charged by surprise. Uses Aion 1.0 on-device AI to detect trials as you browse.",
+  "description": "Detects free-trial sign-ups as you browse, sends daily AI-generated tips to help you get full value, and cancels autonomously when you're ready — powered by Microsoft's Aion-1.0-Instruct, 100% on-device.",
   "permissions": [
     "storage",
     "scripting",

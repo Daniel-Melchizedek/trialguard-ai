@@ -162,6 +162,8 @@ cd trialguard-ai
 
 ### b) Run the backend locally
 
+> ✅ **Already live in Azure — you can skip this step.** The backend is deployed and running. Local setup is only needed if you want to modify or debug the backend functions yourself.
+
 ```bash
 cd backend
 npm install
@@ -187,6 +189,8 @@ Fill in the following values in `local.settings.json`:
 
 ### c) Run the sample app (Neuro Revive)
 
+> ✅ **Already live — you can skip this step.** The sample app is deployed at **[https://tg-neurorevive-app.azurewebsites.net](https://tg-neurorevive-app.azurewebsites.net)**. Use it directly to test trial detection and cancellation without any local setup. Run locally only if you want to modify the sample app itself.
+
 Use this to test trial detection and cancellation without signing up for any real paid service — no credit card required.
 
 ```bash
@@ -200,6 +204,8 @@ docker build -t neurorevive . && docker run -p 8080:8080 neurorevive
 2. Open the Trial Guard popup → click **Cancel Trial** to watch the agent navigate and cancel on `/Cancel`
 
 ### d) Deploy to Azure
+
+> ✅ **Already deployed — you can skip this step.** The full Azure infrastructure is live. Run `azd up` only if you are deploying to your own Azure subscription.
 
 ```bash
 azd up
